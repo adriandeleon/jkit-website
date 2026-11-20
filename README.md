@@ -1,11 +1,11 @@
 # jkit website
 
 The website for [jkit](https://github.com/adriandeleon/jkit), served by GitHub Pages at
-<https://adriandeleon.github.io/jkit-website/>. Built with [Astro](https://astro.build).
+<https://jkit-project.dev>. Built with [Astro](https://astro.build).
 
 ```bash
 npm install
-npm run dev       # http://localhost:4321/jkit-website/
+npm run dev       # http://localhost:4321/
 npm run build     # output in dist/
 ```
 
