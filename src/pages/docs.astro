@@ -10,7 +10,8 @@ const commands = [
   { cmd: "jkit reset <tool>", what: "Clears a shell-level choice; the global version applies again." },
   { cmd: "jkit list", what: "Shows what is installed, and which version is global or active in this shell. Never uses the network." },
   { cmd: "jkit remove <tool>@<version> [vendor]", what: "Removes installed versions. Refuses a global or active version unless you add --force; asks for --all when several match." },
-  { cmd: "jkit hook <shell>", what: "Prints the shell hook for bash, zsh or fish." },
+  { cmd: "jkit hook <shell>", what: "Prints the shell hook for bash, zsh or fish. For bash and zsh it includes tab completion." },
+  { cmd: "jkit completion [bash]", what: "Prints the bash completion script: commands, options, tools and common vendors. The Linux packages install it, and the shell hook loads it, so you rarely need this directly. Works in zsh through bashcompinit." },
 ];
 
 const vendors = [
