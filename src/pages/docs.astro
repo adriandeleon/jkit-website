@@ -3,13 +3,14 @@ import Layout from "../layouts/Layout.astro";
 import { url } from "../lib/site";
 
 const commands = [
-  { cmd: "jkit search <tool>[@version] [vendor]", what: "Lists available versions. For jdk: one row per major version with your default vendor's newest build. --maintained hides end-of-life versions; --pre adds pre-releases; --fx shows JavaFX builds." },
-  { cmd: "jkit install <tool>@<version> [vendor]", what: "Resolves the newest matching version, downloads it, checks its checksum and installs it. Never prompts." },
-  { cmd: "jkit use <tool>@<version> [vendor]", what: "Activates an installed version in this shell only (needs the shell hook)." },
+  { cmd: "jkit search <tool>[@version] [vendor]", what: "Lists available versions. For jdk: a grid of vendors against major versions, with LTS releases and installed builds marked; jdk@21 lists each vendor's newest 21 build. --maintained hides end-of-life versions; --pre adds pre-releases; --fx shows JavaFX builds." },
+  { cmd: "jkit install <tool>@<version> [vendor]", what: "Resolves the newest matching version, downloads it, checks its checksum and installs it. --fx installs a JavaFX build, kept beside the plain one. Never prompts." },
+  { cmd: "jkit upgrade [tool[@major]] [vendor]", what: "Installs the newest build within each installed major version (21.0.5 → 21.0.9, never 21 → 25). Older builds stay installed; --global moves along when it pointed at that line's newest build. --dry-run shows what would change." },
+  { cmd: "jkit use <tool>@<version> [vendor]", what: "Activates an installed version in this shell only (needs the shell hook). Plain builds win over JavaFX builds unless you add --fx." },
   { cmd: "jkit use <tool>@<version> [vendor] --global", what: "Makes it the default for new shells and apps." },
   { cmd: "jkit reset <tool>", what: "Clears a shell-level choice; the global version applies again." },
-  { cmd: "jkit list", what: "Shows what is installed, and which version is global or active in this shell. Never uses the network." },
-  { cmd: "jkit remove <tool>@<version> [vendor]", what: "Removes installed versions. Refuses a global or active version unless you add --force; asks for --all when several match." },
+  { cmd: "jkit list", what: "Shows what is installed, which version is global or active in this shell, and which builds bundle JavaFX. Never uses the network." },
+  { cmd: "jkit remove <tool>@<version> [vendor]", what: "Removes installed versions. Refuses a global or active version unless you add --force; asks for --all when several match. --fx removes JavaFX builds." },
   { cmd: "jkit hook <shell>", what: "Prints the shell hook for bash, zsh or fish. For bash and zsh it includes tab completion." },
   { cmd: "jkit completion [bash]", what: "Prints the bash completion script: commands, options, tools and common vendors. The Linux packages install it, and the shell hook loads it, so you rarely need this directly. Works in zsh through bashcompinit." },
 ];
@@ -35,7 +36,7 @@ const vendors = [
 
 const planned = [
   "jkit.toml and jkit.lock project files, with pin, sync and sync --frozen",
-  "status, env, doctor, init, prune, outdated, upgrade",
+  "status, env, doctor, init, prune, outdated",
   "config get / set / list",
   "self update and a daily update notice",
   "Opt-in Gradle and Maven toolchain integration",
@@ -43,7 +44,7 @@ const planned = [
 ];
 ---
 
-<Layout title="jkit docs" description="jkit command reference: search, install, use, reset, list, remove and the shell hook.">
+<Layout title="jkit docs" description="jkit command reference: search, install, upgrade, use, reset, list, remove and the shell hook.">
   <div class="prose">
     <h1>Docs</h1>
     <p>

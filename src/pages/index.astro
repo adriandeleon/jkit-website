@@ -34,7 +34,7 @@ const features = [
   <section class="hero">
     <div class="wrap hero-grid">
       <div>
-        <p class="badge">v0.1.1 · Linux x64 and arm64</p>
+        <p class="badge">v0.2.0 · Linux x64 and arm64</p>
         <h1>Install and switch JDKs, Maven and Gradle.</h1>
         <p class="lead">
           jkit is one small native command for Linux, macOS and Windows. Name a version, and an
@@ -75,18 +75,39 @@ openjdk version "17.0.21" 2026-10-20 LTS</pre>
   <section class="wrap">
     <h2>Every major version, at a glance</h2>
     <p>
-      <code>jkit search jdk</code> shows one row per major version: your default vendor's newest
-      build in the middle, and who else ships it.
+      <code>jkit search jdk</code> shows every vendor against every major version, with LTS
+      releases marked and what you already have installed. <code>jkit search jdk@21</code> then
+      lists each vendor's newest 21 build.
     </p>
     <pre class="term"><span class="prompt">$ </span><span class="cmd">jkit search jdk --maintained</span>
-major      temurin *       also from
-27         27.0.1.1+4      corretto liberica openjdk oracle sapmachine semeru +1
-25    LTS  25.0.5+8        bisheng corretto dragonwell eliya graalvm +14
-21    LTS  21.0.13+9 ●     bisheng corretto dragonwell gluon-graalvm graalvm +14
-17    LTS  17.0.21+9       bisheng corretto dragonwell graalvm graalvm-ce +13
-11    LTS  11.0.33+10      bisheng corretto dragonwell jetbrains kona +12
-8     LTS  8.0.512+9       bisheng corretto dragonwell kona liberica openjdk +4
-<span class="dim">* default vendor   ● installed   eol = no longer maintained</span></pre>
+                  maintained
+                  27 25 21 17 11 8 7
+                     ‾‾ ‾‾ ‾‾ ‾‾ ‾ ‾
+temurin *          ✓  ✓  ●  ✓  ✓ ✓
+bisheng               ✓  ✓  ✓  ✓ ✓
+corretto           ✓  ✓  ✓  ✓  ✓ ✓
+dragonwell            ✓  ✓  ✓  ✓ ✓
+eliya                 ✓
+gluon-graalvm            ✓
+graalvm               ✓  ✓  ✓
+graalvm-ce            ✓  ✓  ✓
+jetbrains             ✓  ✓  ✓  ✓
+kona                  ✓  ✓  ✓  ✓ ✓
+liberica           ✓  ✓  ✓  ✓  ✓ ✓
+liberica-nik          ✓  ✓  ✓  ✓
+mandrel               ✓  ✓  ✓  ✓
+microsoft             ✓  ✓  ✓  ✓
+openjdk            ✓  ✓  ✓  ✓  ✓ ✓
+openlogic             ✓  ✓  ✓  ✓ ✓
+oracle             ✓  ✓  ✓  ✓  ✓
+sapmachine         ✓  ✓  ✓  ✓  ✓
+semeru             ✓  ✓  ✓  ✓  ✓ ✓
+semeru-certified      ✓  ✓  ✓  ✓
+trava                          ✓ ✓
+zulu               ✓  ✓  ✓  ●  ✓ ✓ ✓
+
+<span class="dim">✓ available   ● installed   ‾‾ LTS   * default vendor
+versions per vendor: jkit search jdk@&lt;major&gt;</span></pre>
   </section>
 
   <section class="wrap">
@@ -102,8 +123,8 @@ major      temurin *       also from
   <section class="wrap status">
     <h2>Status</h2>
     <p class="note">
-      jkit is a working prototype. <code>search</code>, <code>install</code>, <code>use</code>,
-      <code>reset</code>, <code>list</code>, <code>remove</code> and the shell hook work and are
+      jkit is a working prototype. <code>search</code>, <code>install</code>, <code>upgrade</code>,
+      <code>use</code>, <code>reset</code>, <code>list</code>, <code>remove</code>, the shell hook and tab completion work and are
       tested on Linux. Project files (<code>jkit.toml</code>, <code>jkit.lock</code>),
       <code>status</code>, <code>doctor</code>, self-update, and Windows and macOS testing are
       next. See the <a href={url("docs")}>docs</a> for the full list.
