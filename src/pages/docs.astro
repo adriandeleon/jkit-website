@@ -1,0 +1,122 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { url } from "../lib/site";
+
+const commands = [
+  { cmd: "jkit search <tool>[@version] [vendor]", what: "Lists available versions. For jdk: one row per major version with your default vendor's newest build. --maintained hides end-of-life versions; --pre adds pre-releases; --fx shows JavaFX builds." },
+  { cmd: "jkit install <tool>@<version> [vendor]", what: "Resolves the newest matching version, downloads it, checks its checksum and installs it. Never prompts." },
+  { cmd: "jkit use <tool>@<version> [vendor]", what: "Activates an installed version in this shell only (needs the shell hook)." },
+  { cmd: "jkit use <tool>@<version> [vendor] --global", what: "Makes it the default for new shells and apps." },
+  { cmd: "jkit reset <tool>", what: "Clears a shell-level choice; the global version applies again." },
+  { cmd: "jkit list", what: "Shows what is installed, and which version is global or active in this shell. Never uses the network." },
+  { cmd: "jkit remove <tool>@<version> [vendor]", what: "Removes installed versions. Refuses a global or active version unless you add --force; asks for --all when several match." },
+  { cmd: "jkit hook <shell>", what: "Prints the shell hook for bash, zsh or fish." },
+];
+
+const vendors = [
+  ["temurin (default)", "Eclipse Temurin"],
+  ["corretto", "Amazon Corretto"],
+  ["zulu", "Azul Zulu"],
+  ["liberica", "BellSoft Liberica"],
+  ["oracle", "Oracle JDK"],
+  ["openjdk", "OpenJDK builds from jdk.java.net"],
+  ["graalvm-ce", "GraalVM Community"],
+  ["graalvm", "Oracle GraalVM"],
+  ["liberica-nik", "Liberica Native Image Kit"],
+  ["mandrel", "Mandrel"],
+  ["sapmachine", "SapMachine"],
+  ["semeru", "IBM Semeru"],
+  ["microsoft", "Microsoft Build of OpenJDK"],
+  ["dragonwell", "Alibaba Dragonwell"],
+  ["kona", "Tencent Kona"],
+  ["jetbrains", "JetBrains Runtime"],
+];
+
+const planned = [
+  "jkit.toml and jkit.lock project files, with pin, sync and sync --frozen",
+  "status, env, doctor, init, prune, outdated, upgrade",
+  "config get / set / list",
+  "self update and a daily update notice",
+  "Opt-in Gradle and Maven toolchain integration",
+  "Signed macOS and Windows builds, Homebrew, Scoop and winget",
+];
+---
+
+<Layout title="jkit docs" description="jkit command reference: search, install, use, reset, list, remove and the shell hook.">
+  <div class="prose">
+    <h1>Docs</h1>
+    <p>
+      New here? Start with <a href={url("install")}>Install</a>. This page covers how versions and
+      vendors are written, every command in the current prototype, and what comes next.
+    </p>
+
+    <h2>Tools, versions and vendors</h2>
+    <p>
+      jkit manages four tools: <code>jdk</code>, <code>maven</code>, <code>gradle</code> and
+      <code>graalvm</code>. Write a tool as <code>tool@version</code>; the version is a prefix, so
+      <code>jdk@21</code> means the newest 21 and <code>jdk@21.0.5</code> narrows it further.
+      Leave the version out for the newest release.
+    </p>
+    <p>
+      For <code>jdk</code> and <code>graalvm</code>, add a vendor after the spec:
+      <code>jkit install jdk@21 zulu</code>. Without one, jkit uses your default vendor, Temurin
+      unless you set <code>jdk.vendor</code> in <code>~/.jkit/config.toml</code> or
+      <code>JKIT_JDK_VENDOR</code>. jkit never quietly swaps to another vendor; if yours has no
+      build, it tells you who does.
+    </p>
+    <pre><code>jkit install jdk@21              # newest 21 from the default vendor
+jkit install jdk@21 zulu         # newest Zulu 21
+jkit install maven@3.9
+jkit install gradle@9
+jkit install graalvm@25          # GraalVM-based vendors only</code></pre>
+
+    <h2>Commands</h2>
+    <table>
+      <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+      <tbody>
+        {commands.map((c) => (
+          <tr><td><code>{c.cmd}</code></td><td>{c.what}</td></tr>
+        ))}
+      </tbody>
+    </table>
+    <p>
+      <code>--refresh</code> fetches version lists again (they are cached for 24 hours);
+      <code>--offline</code> uses only the cache. When <code>use</code> or <code>remove</code>
+      finds no installed match, jkit prints the install command and exits with code 3.
+    </p>
+
+    <h2>Environment variables jkit sets</h2>
+    <table>
+      <thead><tr><th>Variable</th><th>Points to</th></tr></thead>
+      <tbody>
+        <tr><td><code>JAVA_HOME</code></td><td>The active JDK</td></tr>
+        <tr><td><code>MAVEN_HOME</code></td><td>The active Maven</td></tr>
+        <tr><td><code>GRADLE_HOME</code></td><td>The active Gradle</td></tr>
+        <tr><td><code>GRAALVM_HOME</code></td><td>The <code>graalvm</code> slot, or the active JDK when it is GraalVM-based. Never put on <code>PATH</code>.</td></tr>
+        <tr><td><code>PATH</code></td><td>The active versions' <code>bin</code> folders, ahead of the global ones</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Installs live in <code>~/.jkit</code>; set <code>JKIT_HOME</code> to use another folder.
+    </p>
+
+    <h2>Vendors</h2>
+    <p>
+      Versions come from the <a href="https://api.foojay.io/swagger-ui">foojay Disco API</a>, so
+      any vendor it lists works under its foojay name. The usual ones:
+    </p>
+    <table>
+      <thead><tr><th>Name</th><th>Distribution</th></tr></thead>
+      <tbody>
+        {vendors.map(([n, d]) => (
+          <tr><td><code>{n}</code></td><td>{d}</td></tr>
+        ))}
+      </tbody>
+    </table>
+
+    <h2>Planned</h2>
+    <ul>
+      {planned.map((p) => <li>{p}</li>)}
+    </ul>
+  </div>
+</Layout>

@@ -1,0 +1,150 @@
+---
+import { repo, url } from "../lib/site";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "jkit: install and switch JDKs, Maven and Gradle",
+  description = "jkit is a single native command-line tool that installs and switches JDKs from many vendors, Maven and Gradle on Linux, macOS and Windows. It needs no JDK to run.",
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const path = Astro.url.pathname.replace(/\/$/, "");
+const nav = [
+  { href: url(), label: "Home" },
+  { href: url("install"), label: "Install" },
+  { href: url("docs"), label: "Docs" },
+];
+const isActive = (href: string) => href.replace(/\/$/, "") === path;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href={url("favicon.svg")} type="image/svg+xml" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:type" content="website" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap header-row">
+        <a class="brand" href={url()}>
+          <img src={url("favicon.svg")} alt="" width="28" height="28" />
+          <span>jkit</span>
+        </a>
+        <nav aria-label="Main">
+          {nav.map((n) => (
+            <a href={n.href} aria-current={isActive(n.href) ? "page" : undefined}>{n.label}</a>
+          ))}
+          <a href={repo}>GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <p>
+          jkit is open source under the <a href={`${repo}/blob/main/LICENSE`}>MIT License</a>.
+          © 2026 Adrian De Leon · <a href={repo}>Source on GitHub</a> ·
+          <a href={`${repo}/issues`}>Report an issue</a>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --bg: #ffffff;
+    --bg-soft: #f5f7fa;
+    --text: #1b1f24;
+    --muted: #57606a;
+    --border: #d8dee4;
+    --accent: #1f6feb;
+    --accent-soft: #ddf4ff;
+    --term-bg: #0d1117;
+    --term-text: #e6edf3;
+    --term-muted: #8b949e;
+    --term-accent: #79c0ff;
+    --warn-bg: #fff8c5;
+    --warn-border: #d4a72c;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1117;
+      --bg-soft: #161b22;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --border: #30363d;
+      --accent: #4493f8;
+      --accent-soft: #0c2d6b;
+      --term-bg: #010409;
+      --warn-bg: #2b2111;
+      --warn-border: #9e6a03;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.9em; }
+  :not(pre) > code { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 4px; padding: 0.1em 0.35em; }
+  pre {
+    background: var(--term-bg);
+    color: var(--term-text);
+    border-radius: 10px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    line-height: 1.5;
+  }
+  h1, h2, h3 { line-height: 1.25; }
+  h2 { margin-top: 2.2em; }
+  table { border-collapse: collapse; width: 100%; margin: 1em 0; display: block; overflow-x: auto; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.9em; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px; }
+  .prose { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
+  .site-header { border-bottom: 1px solid var(--border); background: var(--bg); position: sticky; top: 0; z-index: 10; }
+  .header-row { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.2em; color: var(--text); }
+  .brand:hover { text-decoration: none; }
+  nav { display: flex; gap: 18px; flex-wrap: wrap; }
+  nav a { color: var(--muted); font-weight: 500; }
+  nav a[aria-current="page"] { color: var(--text); }
+  .site-footer { border-top: 1px solid var(--border); color: var(--muted); font-size: 0.9em; padding: 24px 0; }
+  .note {
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin: 1.2em 0;
+  }
+  .term .prompt { color: var(--term-muted); user-select: none; }
+  .term .cmd { color: var(--term-accent); }
+  .term .dim { color: var(--term-muted); }
+  @media (max-width: 560px) {
+    nav { gap: 12px; font-size: 0.95em; }
+  }
+</style>

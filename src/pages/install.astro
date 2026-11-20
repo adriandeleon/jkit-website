@@ -1,0 +1,88 @@
+---
+import Layout from "../layouts/Layout.astro";
+import { repo, releases, vitrina, url } from "../lib/site";
+
+const aptSetup = `sudo install -d -m 0755 /etc/apt/keyrings
+curl -fsSL https://vitrina-project.dev/vitrina.asc | sudo tee /etc/apt/keyrings/vitrina.asc > /dev/null
+sudo tee /etc/apt/sources.list.d/vitrina.sources > /dev/null <<'EOF'
+Types: deb
+URIs: https://vitrina-project.dev/apt
+Suites: stable
+Components: main
+Architectures: amd64 arm64
+Signed-By: /etc/apt/keyrings/vitrina.asc
+EOF
+sudo apt update
+sudo apt install jkit`;
+
+const packages = `sudo apt install ./jkit_*_amd64.deb      # Debian, Ubuntu
+sudo dnf install ./jkit-*.x86_64.rpm     # Fedora, RHEL, Rocky, Alma`;
+
+const source = `git clone ${repo}.git
+cd jkit
+./mvnw verify                                   # build and test on the JVM
+GRAALVM_HOME=/path/to/graalvm-25 ./mvnw -Pnative package -DskipTests
+sudo install jkit-cli/target/jkit /usr/local/bin/`;
+
+const firstSteps = `jkit search jdk
+jkit install jdk@21
+jkit use jdk@21 --global`;
+---
+
+<Layout title="Install jkit" description="Install jkit on Debian, Ubuntu, Fedora, RHEL or from source, then turn on the shell hook.">
+  <div class="prose">
+    <h1>Install jkit</h1>
+    <p>
+      jkit is a single native binary. It needs no JDK to run. Linux packages need glibc 2.34 or
+      newer: Debian 12+, Ubuntu 22.04+, Fedora, and RHEL, Rocky or Alma 9+.
+    </p>
+
+    <p class="note">
+      The first release, 0.1.0, is not out yet, so the apt repository and package downloads below
+      don't have jkit yet. Until then, build it <a href="#from-source">from source</a>.
+    </p>
+
+    <h2>Debian and Ubuntu: apt</h2>
+    <p>
+      jkit is published in the <a href={vitrina}>Vitrina</a> apt repository, so
+      <code>apt upgrade</code> keeps it current. Add the repository once, then install:
+    </p>
+    <pre><code>{aptSetup}</code></pre>
+
+    <h2>.deb or .rpm download</h2>
+    <p>Download the package for your system from the <a href={releases}>latest release</a>, then:</p>
+    <pre><code>{packages}</code></pre>
+
+    <h2 id="from-source">From source</h2>
+    <p>Building needs JDK 25 and, for the native binary, GraalVM 25.</p>
+    <pre><code>{source}</code></pre>
+
+    <h2>Turn on the shell hook</h2>
+    <p>
+      A program can't change the shell that started it, so <code>jkit use</code> needs a small
+      shell function. Add one line to your shell's startup file:
+    </p>
+    <table>
+      <thead><tr><th>Shell</th><th>Add to</th><th>Line</th></tr></thead>
+      <tbody>
+        <tr><td>bash</td><td><code>~/.bashrc</code></td><td><code>eval "$(jkit hook bash)"</code></td></tr>
+        <tr><td>zsh</td><td><code>~/.zshrc</code></td><td><code>eval "$(jkit hook zsh)"</code></td></tr>
+        <tr><td>fish</td><td><code>~/.config/fish/config.fish</code></td><td><code>jkit hook fish | source</code></td></tr>
+      </tbody>
+    </table>
+    <p>
+      The hook also puts the global versions on <code>PATH</code> and sets <code>JAVA_HOME</code>,
+      <code>MAVEN_HOME</code>, <code>GRADLE_HOME</code> and <code>GRAALVM_HOME</code> when you
+      have not set them yourself.
+    </p>
+
+    <h2>First steps</h2>
+    <pre><code>{firstSteps}</code></pre>
+    <p>Then see the <a href={url("docs")}>command reference</a>.</p>
+
+    <p class="note">
+      macOS and Windows packages are planned but not published yet. Until then, macOS users can
+      build from source.
+    </p>
+  </div>
+</Layout>
