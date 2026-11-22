@@ -1,6 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { url } from "../lib/site";
+import { repoDoc, url } from "../lib/site";
 
 const commands = [
   { cmd: "jkit search <tool>[@version] [vendor]", what: "Lists available versions. For jdk: a grid of vendors against major versions, with LTS releases and installed builds marked; jdk@21 lists each vendor's newest 21 build. --maintained hides end-of-life versions; --pre adds pre-releases; --fx shows JavaFX builds." },
@@ -35,16 +35,17 @@ const vendors = [
 ];
 
 const planned = [
-  "jkit.toml and jkit.lock project files, with pin, sync and sync --frozen",
-  "status, env, doctor, init, prune, outdated",
+  "Project files: jkit.toml, .sdkmanrc, .tool-versions and .java-version, with pin, sync and sync --frozen",
+  "status, env, exec, doctor, init, prune, outdated",
+  "sbt as a fifth tool",
   "config get / set / list",
   "self update and a daily update notice",
   "Opt-in Gradle and Maven toolchain integration",
-  "Signed macOS and Windows builds, Homebrew, Scoop and winget",
+  "Windows builds, signed macOS builds, Homebrew, Scoop and winget",
 ];
 ---
 
-<Layout title="jkit docs" description="jkit command reference: search, install, upgrade, use, reset, list, remove and the shell hook.">
+<Layout title="jkit docs" description="jkit command reference: search, install, upgrade, use, reset, list, remove, the shell hook and --json output.">
   <div class="prose">
     <h1>Docs</h1>
     <p>
@@ -85,6 +86,40 @@ jkit install graalvm@25          # GraalVM-based vendors only</code></pre>
       <code>--refresh</code> fetches version lists again (they are cached for 24 hours);
       <code>--offline</code> uses only the cache. When <code>use</code> or <code>remove</code>
       finds no installed match, jkit prints the install command and exits with code 3.
+    </p>
+
+    <h2 id="changes">What jkit changed</h2>
+    <p>
+      <code>use</code>, <code>reset</code>, <code>install</code>, <code>upgrade</code> and
+      <code>remove</code> print what they changed outside <code>~/.jkit</code>, indented under
+      their usual message: each variable set or unset, <code>PATH</code> entries added or removed,
+      and global links moved or deleted. <code>use --global</code> also says what it means for
+      this shell, for example when a <code>JAVA_HOME</code> set outside jkit still wins or the
+      shell hook isn't loaded.
+    </p>
+
+    <h2 id="json">JSON output</h2>
+    <p>
+      For editors, IDEs and scripts: add <code>--json</code> to <code>list</code>,
+      <code>search</code>, <code>install</code>, <code>upgrade</code>, <code>use</code> or
+      <code>remove</code> and jkit prints exactly one JSON document on stdout, also when it fails.
+      Progress and messages go to stderr. Every document starts with
+      <code>"schemaVersion": 1</code>; fields may be added, but removing or renaming one bumps
+      the version.
+    </p>
+    <pre><code>{`$ jkit use jdk@99 --json
+{
+  "schemaVersion": 1,
+  "error": {
+    "message": "no installed JDK matches 99 from temurin (default vendor)",
+    "hints": ["install it:          jkit install jdk@99"],
+    "exitCode": 3
+  }
+}`}</code></pre>
+    <p>
+      Exit codes: <code>0</code> success, <code>1</code> failure, <code>2</code> bad arguments,
+      <code>3</code> no installed match. The full format is in
+      <a href={repoDoc("json.md")}>docs/json.md</a>.
     </p>
 
     <h2>Environment variables jkit sets</h2>

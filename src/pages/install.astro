@@ -15,8 +15,17 @@ EOF
 sudo apt update
 sudo apt install jkit`;
 
-const packages = `sudo apt install ./jkit_*_amd64.deb      # Debian, Ubuntu
-sudo dnf install ./jkit-*.x86_64.rpm     # Fedora, RHEL, Rocky, Alma`;
+const packages = `sudo apt install ./jkit_*_amd64.deb      # Debian, Ubuntu (arm64: jkit_*_arm64.deb)
+sudo dnf install ./jkit-*.x86_64.rpm     # Fedora, RHEL, Rocky, Alma (arm64: jkit-*.aarch64.rpm)`;
+
+const checksums = `sha256sum --check --ignore-missing SHA256SUMS`;
+
+const linuxTar = `tar -xzf jkit-*-linux-*.tar.gz
+sudo install jkit /usr/local/bin/`;
+
+const macos = `tar -xzf jkit-*-macos-*.tar.gz
+xattr -d com.apple.quarantine jkit       # the binary is not signed yet
+sudo mv jkit /usr/local/bin/`;
 
 const source = `git clone ${repo}.git
 cd jkit
@@ -29,12 +38,13 @@ jkit install jdk@21
 jkit use jdk@21 --global`;
 ---
 
-<Layout title="Install jkit" description="Install jkit on Debian, Ubuntu, Fedora, RHEL or from source, then turn on the shell hook.">
+<Layout title="Install jkit" description="Install jkit on Debian, Ubuntu, Fedora, RHEL, macOS or from source, then turn on the shell hook.">
   <div class="prose">
     <h1>Install jkit</h1>
     <p>
-      jkit is a single native binary. It needs no JDK to run. Linux packages need glibc 2.34 or
-      newer: Debian 12+, Ubuntu 22.04+, Fedora, and RHEL, Rocky or Alma 9+.
+      jkit is a single native binary for x64 and arm64. It needs no JDK to run. On Linux it needs
+      glibc 2.34 or newer: Debian 12+, Ubuntu 22.04+, Fedora, and RHEL, Rocky or Alma 9+. On macOS
+      it needs macOS 15 (Sequoia) or newer.
     </p>
 
     <h2>Debian and Ubuntu: apt</h2>
@@ -47,6 +57,27 @@ jkit use jdk@21 --global`;
     <h2>.deb or .rpm download</h2>
     <p>Download the package for your system from the <a href={releases}>latest release</a>, then:</p>
     <pre><code>{packages}</code></pre>
+    <p>
+      Each release also has a <code>SHA256SUMS</code> file. Download it next to the package and
+      check it with:
+    </p>
+    <pre><code>{checksums}</code></pre>
+
+    <h2 id="linux-tar">Other Linux: plain binary</h2>
+    <p>
+      For a distribution without apt or dnf, download <code>jkit-*-linux-x64.tar.gz</code> or
+      <code>jkit-*-linux-aarch64.tar.gz</code> from the <a href={releases}>latest release</a>:
+    </p>
+    <pre><code>{linuxTar}</code></pre>
+
+    <h2 id="macos">macOS</h2>
+    <p>
+      Download <code>jkit-*-macos-aarch64.tar.gz</code> (Apple Silicon) or
+      <code>jkit-*-macos-x64.tar.gz</code> (Intel) from the <a href={releases}>latest release</a>.
+      The binary isn't signed or notarized yet, so Gatekeeper blocks a copy downloaded with a
+      browser until you clear its quarantine flag:
+    </p>
+    <pre><code>{macos}</code></pre>
 
     <h2 id="from-source">From source</h2>
     <p>Building needs JDK 25 and, for the native binary, GraalVM 25.</p>
@@ -81,8 +112,8 @@ jkit use jdk@21 --global`;
     <p>Then see the <a href={url("docs")}>command reference</a>.</p>
 
     <p class="note">
-      macOS and Windows packages are planned but not published yet. Until then, macOS users can
-      build from source.
+      Windows builds are planned but not published yet, and so are Homebrew, Scoop and winget
+      packages.
     </p>
   </div>
 </Layout>

@@ -1,6 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { repo, url } from "../lib/site";
+import { repo, url, version } from "../lib/site";
 
 const features = [
   {
@@ -27,6 +27,18 @@ const features = [
     title: "A GraalVM slot",
     text: "Keep Temurin as JAVA_HOME and point GRAALVM_HOME at GraalVM for native-image builds: jkit use graalvm@25.",
   },
+  {
+    title: "Says what it changed",
+    text: "After use, install, upgrade, reset or remove, jkit lists every variable it set, PATH entry it added and link it moved, and what that means for this shell and new ones.",
+  },
+  {
+    title: "JSON for editors and scripts",
+    text: "Add --json to list, search, install, upgrade, use or remove for exactly one JSON document on stdout, errors included, with a versioned schema.",
+  },
+  {
+    title: "Linux and macOS",
+    text: "Native builds for x64 and arm64: an apt repository, .deb and .rpm packages, and macOS binaries for Apple Silicon and Intel. Windows is planned.",
+  },
 ];
 ---
 
@@ -34,11 +46,11 @@ const features = [
   <section class="hero">
     <div class="wrap hero-grid">
       <div>
-        <p class="badge">v0.2.0 · Linux x64 and arm64</p>
+        <p class="badge">v{version} · Linux and macOS · x64 and arm64</p>
         <h1>Install and switch JDKs, Maven and Gradle.</h1>
         <p class="lead">
-          jkit is one small native command for Linux, macOS and Windows. Name a version, and an
-          optional vendor, and it does the rest. No bash scripts, no JDK required.
+          jkit is one small native command for Linux and macOS. Name a version, and an optional
+          vendor, and it does the rest. No bash scripts, no JDK required.
         </p>
         <p class="ctas">
           <a class="btn primary" href={url("install")}>Install jkit</a>
@@ -114,7 +126,8 @@ versions per vendor: jkit search jdk@&lt;major&gt;</span></pre>
     <h2>Why not SDKMAN?</h2>
     <p>
       SDKMAN is great, but it is written in bash, so on Windows it needs WSL or Git Bash. jkit is a
-      native binary on every platform, with its own command design: version ranges like
+      single native binary that needs no bash, so Windows support is planned without WSL. It has
+      its own command design: version ranges like
       <code>jdk@21</code>, an optional vendor instead of IDs like <code>21.0.5-tem</code>, no
       interactive prompts, and a clear difference between this shell and the global default.
     </p>
@@ -124,10 +137,11 @@ versions per vendor: jkit search jdk@&lt;major&gt;</span></pre>
     <h2>Status</h2>
     <p class="note">
       jkit is a working prototype. <code>search</code>, <code>install</code>, <code>upgrade</code>,
-      <code>use</code>, <code>reset</code>, <code>list</code>, <code>remove</code>, the shell hook and tab completion work and are
-      tested on Linux. Project files (<code>jkit.toml</code>, <code>jkit.lock</code>),
-      <code>status</code>, <code>doctor</code>, self-update, and Windows and macOS testing are
-      next. See the <a href={url("docs")}>docs</a> for the full list.
+      <code>use</code>, <code>reset</code>, <code>list</code>, <code>remove</code>, the shell hook,
+      tab completion and <code>--json</code> work, and every release is tested on Linux and macOS.
+      Project files (<code>jkit.toml</code>, <code>.sdkmanrc</code>, <code>.tool-versions</code>),
+      <code>status</code>, <code>doctor</code>, self-update and Windows are next. See the
+      <a href={url("docs")}>docs</a> for the full list.
     </p>
   </section>
 </Layout>
