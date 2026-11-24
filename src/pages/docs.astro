@@ -8,9 +8,10 @@ const groups = [
     commands: [
       { cmd: "jkit search <tool>[@version] [vendor]", what: "Lists the versions available to install. For jdk: a grid of vendors against major versions, with LTS releases and installed builds marked; jdk@21 lists each vendor's newest 21 build, and jdk@21 zulu every Zulu 21 build. --maintained hides end-of-life versions, --pre adds pre-releases, --fx shows JavaFX builds." },
       { cmd: "jkit install <tool>[@version] [vendor]", what: "Resolves the newest matching version, downloads it, checks its checksum and installs it. The first install of a tool also becomes its global default (--no-default to skip). --fx installs a JavaFX build beside the plain one. Never prompts." },
-      { cmd: "jkit upgrade [tool[@major]] [vendor]", what: "Installs the newest build of each installed major version (21.0.5 → 21.0.9, never 21 → 25). A global default that pointed at the old build moves along; old builds stay. --dry-run shows what would change." },
+      { cmd: "jkit upgrade [tool[@major]] [vendor]", what: "Installs the newest build of each installed major version (21.0.5 → 21.0.9, never 21 → 25). A global default that pointed at the old build moves along; old builds stay (jkit prune removes them). --dry-run shows what would change." },
       { cmd: "jkit list", what: "Shows what is installed, which version is global or active in this shell, and which builds bundle JavaFX. Never uses the network." },
       { cmd: "jkit remove <tool>@<version> [vendor]", what: "Removes installed versions. Refuses one that is global or chosen in this shell unless you add --force; asks for --all when several match." },
+      { cmd: "jkit prune", what: "Frees disk space: older builds in a release line once a newer one is installed (unless global, used in this shell or pinned here), folders left by interrupted installs, and cached version lists older than 30 days. --dry-run shows what would go and how much space it frees." },
     ],
   },
   {
@@ -51,6 +52,13 @@ const groups = [
       { cmd: "jkit completion", what: "Prints the bash completion script (zsh through bashcompinit). The hook and the Linux packages already load it." },
     ],
   },
+  {
+    title: "Settings and jkit itself",
+    commands: [
+      { cmd: "jkit config [get|set|unset] [key] [value]", what: "Lists each setting, its value and where it comes from (an environment variable, config.toml or the default). set checks the value and keeps the file's comments; unset brings back the default." },
+      { cmd: "jkit self-update", what: "Updates jkit to the newest release. A jkit from Homebrew, apt, dnf or winget is updated there (this prints the command); one from a release archive is replaced in place after checking SHA256SUMS. --check only says whether a newer jkit is out." },
+    ],
+  },
 ];
 
 const vendors = [
@@ -75,9 +83,7 @@ const vendors = [
 const notYet = [
   "Switching on cd, and jkit hook --install, in PowerShell",
   "Native fish and zsh completion",
-  "A config command, and prune for old builds",
-  "Self-update",
-  "Vendor signature checks (downloads are checked against published checksums today)",
+  "Signature checks for more JDK vendors (every download is checked against its published checksum; Temurin and Microsoft builds against the vendor's signature too)",
   "A native Windows on ARM build (the x64 build runs under emulation)",
 ];
 ---
@@ -184,6 +190,7 @@ vendor = "temurin"        # default JDK vendor
 vendor = "graalvm-ce"     # default GraalVM vendor
 [shell]
 auto_switch = true        # switch to a project's versions on cd`}</code></pre>
+    <p><code>jkit config</code> shows these and where each value comes from; <code>jkit config set jdk.vendor zulu</code> changes one.</p>
     <table>
       <thead><tr><th>Environment variable</th><th>What it does</th></tr></thead>
       <tbody>
@@ -242,7 +249,9 @@ auto_switch = true        # switch to a project's versions on cd`}</code></pre>
       Downloads come over HTTPS only and are checked against the checksum their source publishes
       before anything is unpacked. SHA-256 or stronger counts as verified; old Maven releases with
       only SHA-1 install with a warning, marked unverified; a download with no checksum is refused
-      unless you add <code>--allow-unverified</code>. Archives are checked for links and paths that
+      unless you add <code>--allow-unverified</code>. Temurin and Microsoft builds are also checked
+      against the vendor's OpenPGP signature, with keys built into jkit; a signature that doesn't match
+      stops the install. Archives are checked for links and paths that
       would leave the install folder. See <a href={`${repo}/blob/main/SECURITY.md`}>SECURITY.md</a>,
       which also says how to report a vulnerability privately.
     </p>
