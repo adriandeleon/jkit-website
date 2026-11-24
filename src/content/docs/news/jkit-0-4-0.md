@@ -1,8 +1,7 @@
 ---
 title: "jkit 0.4.0: config, prune, self-update and signature checks"
 description: jkit 0.4.0 adds jkit config, jkit prune and jkit self-update, and checks Temurin, Microsoft, Corretto, Maven and sbt downloads against their publishers' signatures.
-date: 2026-12-01T12:00:00Z
-draft: true
+date: 2026-11-24T23:00:00Z
 authors: adrian
 tags: [release]
 excerpt: Settings you can see and change, disk space back, jkit updating itself, and OpenPGP signature checks.
@@ -64,6 +63,17 @@ release adds their key. `jkit self-update` brings it.
 
 Corretto publishes no checksum, so its signature is now the check, and Corretto installs no longer
 need `--allow-unverified`. [Security](/reference/security/)
+
+`jkit search` now shows what `jkit install` would refuse before you try: `○` marks a build with
+no published checksum and no signature jkit checks, and a blank cell one with no direct download.
+
+```console
+$ jkit search jdk@21
+bisheng          21.0.12+15  ○ no checksum
+corretto         21.0.13.1+2
+dragonwell       21.0.13.1  ○ no checksum
+…
+```
 
 ## `eval "$(jkit env)"` stops a script
 

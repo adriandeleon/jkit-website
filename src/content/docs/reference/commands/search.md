@@ -35,6 +35,17 @@ What it shows depends on the arguments:
 `graalvm` works like `jdk`, limited to GraalVM-based vendors. Versions you have installed are
 marked `●`. `@lts` is replaced by the newest LTS release.
 
+Each listed JDK build is looked up the way `jkit install` would (cached for 24 hours, like the
+version lists), so the table only promises what install will do:
+
+- `○` marks a build with no published checksum and no signature jkit checks. `jkit install`
+  refuses it unless you pass `--allow-unverified`.
+- A blank cell (or `no direct download` for `jdk@21`) means foojay lists the release but has no
+  build jkit can download, such as Oracle 11.
+
+If the lookup fails, or isn't cached with `--offline`, the build is listed as before, without a
+mark. The first `jkit search jdk` of the day takes a few seconds while it looks the builds up.
+
 The JDK table puts maintained releases first and releases that reached their end of life after
 them; `‾‾` under a number marks a long-term-support (LTS) release. Your default vendor is the
 first row, marked `*`.
@@ -67,29 +78,29 @@ $ jkit search jdk --maintained
                   27 25 21 17 11 8 7
                      ‾‾ ‾‾ ‾‾ ‾‾ ‾ ‾
 temurin *          ✓  ✓  ✓  ✓  ✓ ✓
-bisheng               ✓  ✓  ✓  ✓ ✓
+bisheng               ○  ○  ○  ○ ○
 corretto           ✓  ✓  ✓  ✓  ✓ ✓
-dragonwell            ✓  ✓  ✓  ✓ ✓
+dragonwell            ○  ○  ○  ○ ○
 eliya                 ✓
-gluon-graalvm            ✓
+gluon-graalvm            ○
 graalvm               ✓  ✓  ✓
 graalvm-ce            ✓  ✓  ✓
-jetbrains             ✓  ✓  ✓  ✓
-kona                  ✓  ✓  ✓  ✓ ✓
+jetbrains             ✓  ✓  ✓  ○
+kona                  ✓  ✓  ✓  ○ ✓
 liberica           ✓  ✓  ✓  ✓  ✓ ✓
 liberica-nik          ✓  ✓  ✓  ✓
-mandrel               ✓  ✓  ✓  ✓
+mandrel               ✓  ✓  ○  ○
 microsoft             ✓  ✓  ✓  ✓
-openjdk            ✓  ✓  ✓  ✓  ✓ ✓
-openlogic             ✓  ✓  ✓  ✓ ✓
-oracle             ✓  ✓  ✓  ✓  ✓
+openjdk            ✓  ✓  ✓  ✓  ○ ○
+openlogic             ○  ○  ○  ○ ○
+oracle             ✓  ✓  ✓  ✓
 sapmachine         ✓  ✓  ✓  ✓  ✓
 semeru             ✓  ✓  ✓  ✓  ✓ ✓
 semeru-certified      ✓  ✓  ✓  ✓
-trava                          ✓ ✓
+trava                          ○ ○
 zulu               ✓  ✓  ✓  ✓  ✓ ✓ ✓
 
-✓ available   ● installed   ‾‾ LTS   * default vendor
+✓ available   ○ no checksum (needs --allow-unverified)   ● installed   ‾‾ LTS   * default vendor
 versions per vendor: jkit search jdk@<major>
 ```
 
@@ -97,12 +108,14 @@ The newest JDK 21 from every vendor, then every build from one of them:
 
 ```console
 $ jkit search jdk@21
-bisheng          21.0.12+15
+bisheng          21.0.12+15  ○ no checksum
 corretto         21.0.13.1+2
+dragonwell       21.0.13.1  ○ no checksum
 …
 temurin *        21.0.13.1+2
 zulu             21.0.13.1+2
 * default vendor   ● installed   · all builds of one vendor: jkit search jdk@21 <vendor>
+○ no published checksum: install refuses it unless --allow-unverified
 $ jkit search jdk@21 zulu
 21.0.13.1+2
 21.0.13+9

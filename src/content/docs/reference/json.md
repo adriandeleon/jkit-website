@@ -278,7 +278,8 @@ document is printed either way.
   "majors": [ { "major": 25, "lts": true, "maintained": true } ],
   "available": [
     { "tool": "jdk", "version": "25.0.1+8", "major": 25, "vendor": "temurin", "graalvm": false,
-      "fx": false, "lts": true, "maintained": true, "preRelease": false, "installed": false }
+      "fx": false, "lts": true, "maintained": true, "preRelease": false, "installed": false,
+      "downloadable": true, "verifiable": true }
   ],
   "changes": []
 }
@@ -293,6 +294,12 @@ What `available` holds for a JDK (or `graalvm`):
 | `jdk@21` | the newest matching build of every vendor |
 | `jdk@21 zulu` | every matching build of that vendor |
 
+- `downloadable` and `verifiable` say what `jkit install` would do with that line:
+  `downloadable: false` when no matching build has a direct download (install refuses it),
+  `verifiable: false` when the build it would download has no published checksum and no signature
+  jkit checks (install refuses it unless `--allow-unverified`). Either is `null` when jkit couldn't
+  look it up (offline and not cached); `verifiable` is also `null` when the build isn't
+  downloadable.
 - `vendor` is the default vendor, or the one typed (`vendorChosen: true`).
 - `majors` lists every feature release foojay knows, newest first, with whether it is LTS and
   still maintained.

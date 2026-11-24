@@ -11,7 +11,7 @@ run `jkit self-update` (see [Keeping up to date](/guides/keeping-up-to-date/)).
 
 ## 0.4.0
 
-Settings, disk space, self-updates and signature checks.
+*24 November 2026.* Settings, disk space, self-updates and signature checks.
 
 - **`jkit config`** lists every setting, its value and where that value comes from (an environment
   variable, `config.toml` or the default). `jkit config set jdk.vendor zulu` and
@@ -37,7 +37,13 @@ Settings, disk space, self-updates and signature checks.
 - **`eval "$(jkit env)"` fails when `jkit env` does.** On failure it prints `false` on stdout
   (`throw '…'` for PowerShell), so a `set -e` script or CI step stops there.
   [Reference](/reference/commands/env/)
-- Smaller fixes: `jkit upgrade jdk zuluu` says `unknown JDK vendor` with a suggestion (exit 2)
+- **`jkit search` marks what `jkit install` would refuse.** `○` marks a build with no published
+  checksum and no signature jkit checks (it needs `--allow-unverified`), and a blank cell one
+  with no direct download, such as Oracle 11. `--json` adds `downloadable` and `verifiable` to
+  each build. [Reference](/reference/commands/search/)
+- Smaller fixes: Corretto 8 installs again (jkit reads its `version.txt`, as it has no `release`
+  file); `jkit self-update --check` works while the newest release has no signature;
+  `jkit upgrade jdk zuluu` says `unknown JDK vendor` with a suggestion (exit 2)
   instead of finding nothing to upgrade; `jkit config set jdk.vendor "SAP Machine"` accepts
   foojay's other names for a vendor; `config set` and `config unset` can repair a `config.toml`
   with a wrong value; `jkit prune` carries on past a build it can't remove.
