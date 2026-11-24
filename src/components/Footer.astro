@@ -1,0 +1,26 @@
+---
+// Starlight's footer (edit link, last updated, pagination) plus the copyright line.
+import Default from "@astrojs/starlight/components/Footer.astro";
+
+const year = new Date().getFullYear();
+---
+
+<Default><slot /></Default>
+<p class="copyright">
+  © {year} Adrian De Leon · <a href="mailto:adrian.deleon@gmail.com">adrian.deleon@gmail.com</a> · <a href="https://adeleon.dev">adeleon.dev</a>
+</p>
+
+<style>
+  .copyright {
+    margin-top: 2rem;
+    text-align: center;
+    font-size: var(--sl-text-xs);
+    color: var(--sl-color-gray-3);
+  }
+  .copyright a {
+    color: inherit;
+  }
+  .copyright a:hover {
+    color: var(--sl-color-white);
+  }
+</style>

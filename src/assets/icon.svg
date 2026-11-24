@@ -1,0 +1,30 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="jkit">
+  <!--
+    Family resemblance to Editora, Termina, Torrenta, Mirada and Pauta: the same Ink navy tile, the
+    same corner radius, the same teal gradient, and the same two-tone split, a muted periwinkle
+    framing glyph with the teal reserved for the focal element.
+
+    jkit installs many JDKs and makes one active. The periwinkle j is the tool; its dot is a teal
+    layer, the one release on top of the stack, the same diamond that dots the j in the wordmark.
+
+    Two shapes only, so it still reads at 32px: the j and the layer. The stem starts 36px below the
+    layer so the two stay apart at small sizes.
+
+    The group is centred optically: the stroke caps reach 20px past the j's path and the layer's
+    rounded join 10px past its points, so the ink runs from 156 to 356 across and from 99 to 413 down.
+  -->
+  <defs>
+    <linearGradient id="caretF" x1="256" y1="99" x2="256" y2="187" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5EEAD4"/>
+      <stop offset="1" stop-color="#22B8A6"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="16" y="16" width="480" height="480" rx="108" fill="#1B1E2A"/>
+
+  <path d="M286 253 V335 Q286 393 228 393 Q196 393 176 375"
+        stroke="#9AA2D4" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M286 109 L346 143 L286 177 L226 143 Z"
+        fill="url(#caretF)" stroke="url(#caretF)" stroke-width="20" stroke-linejoin="round"/>
+</svg>

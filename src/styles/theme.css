@@ -31,6 +31,13 @@
 
 /* Landing page */
 .hero .tagline { font-size: var(--sl-text-xl); }
+/* The icon sits on top of the title, at every width. */
+.hero { grid-template-columns: 100%; }
+.hero > img { order: 0; width: 6rem; margin-inline: auto; }
+@media (min-width: 50rem) {
+  .hero { grid-template-columns: 100%; }
+  .hero > img { order: 0; width: 7rem; margin-inline: 0; }
+}
 .compare-table th:first-child,
 .compare-table td:first-child { font-weight: 600; }
 .compare-table td { vertical-align: top; }
