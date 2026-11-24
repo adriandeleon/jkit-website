@@ -1,5 +1,5 @@
 /** The latest jkit release; the only line to change when a new one comes out. */
-export const version = "0.2.2";
+export const version = "0.3.0";
 
 export const repo = "https://github.com/adriandeleon/jkit";
 export const releases = `${repo}/releases/latest`;

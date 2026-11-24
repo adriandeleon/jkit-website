@@ -7,8 +7,8 @@ interface Props {
 }
 
 const {
-  title = "jkit: install and switch JDKs, Maven and Gradle",
-  description = "jkit is a single native command-line tool that installs and switches JDKs from many vendors, Maven and Gradle on Linux, macOS and Windows. It needs no JDK to run.",
+  title = "jkit: install and switch JDKs, Maven, Gradle and sbt",
+  description = "jkit is a single native command-line tool that installs and switches JDKs from 20+ vendors, Maven, Gradle and sbt, per shell, per project or globally, on Linux, macOS and Windows. It needs no JDK to run.",
 } = Astro.props;
 
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
@@ -60,7 +60,8 @@ const isActive = (href: string) => href.replace(/\/$/, "") === path;
         <p>
           jkit is open source under the <a href={`${repo}/blob/main/LICENSE`}>MIT License</a>.
           © 2026 Adrian De Leon · <a href={repo}>Source on GitHub</a> ·
-          <a href={`${repo}/issues`}>Report an issue</a>
+          <a href={`${repo}/issues`}>Report an issue</a> ·
+          <a href={`${repo}/blob/main/SECURITY.md`}>Security</a>
         </p>
       </div>
     </footer>

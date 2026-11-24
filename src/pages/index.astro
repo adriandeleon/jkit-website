@@ -5,39 +5,39 @@ import { repo, url, version } from "../lib/site";
 const features = [
   {
     title: "JDKs from 20+ vendors",
-    text: "Temurin, Corretto, Zulu, Liberica, Oracle, GraalVM, SapMachine, Semeru, Microsoft and more, from the foojay Disco API. Pick one per install or set a default.",
+    text: "Temurin, Corretto, Zulu, Liberica, Oracle, GraalVM, SapMachine, Semeru, Microsoft and more, from the foojay Disco API. Pick one per install or set a default, and keep GraalVM in its own GRAALVM_HOME slot for native-image.",
   },
   {
-    title: "Maven and Gradle too",
-    text: "Straight from Maven Central and services.gradle.org. Projects that use ./mvnw or ./gradlew keep their wrapper; jkit supplies the JDK.",
+    title: "Maven, Gradle and sbt",
+    text: "Straight from Maven Central, services.gradle.org and sbt's releases. Projects that use ./mvnw or ./gradlew keep their wrapper; jkit supplies the JDK.",
   },
   {
-    title: "No JDK needed to run",
-    text: "A single native binary built with GraalVM. Starts in milliseconds, so it can run from your shell prompt without slowing it down.",
+    title: "Per project",
+    text: "jkit pin jdk@21 writes a jkit.toml, and jkit sync installs what it pins. It also reads the .sdkmanrc, .tool-versions or .java-version you already have. With auto-switch on, bash, zsh and fish follow it on cd.",
   },
   {
-    title: "Switch per shell or globally",
-    text: "jkit use jdk@21 changes this shell only; --global changes the default for every terminal and app. jkit reset goes back.",
+    title: "Per shell or globally",
+    text: "jkit use jdk@21 changes this shell only; --global changes the default for every new terminal and app. jkit reset goes back.",
   },
   {
-    title: "Checked downloads",
-    text: "Every archive is checked against the checksum its source publishes before anything is unpacked. A failed install leaves nothing behind.",
-  },
-  {
-    title: "A GraalVM slot",
-    text: "Keep Temurin as JAVA_HOME and point GRAALVM_HOME at GraalVM for native-image builds: jkit use graalvm@25.",
+    title: "For CI, scripts and agents",
+    text: "jkit exec jdk@17 -- mvn test runs one command with the right versions, no hook and no shell change. --json gives one document with a versioned schema, errors included.",
   },
   {
     title: "Says what it changed",
-    text: "After use, install, upgrade, reset or remove, jkit lists every variable it set, PATH entry it added and link it moved, and what that means for this shell and new ones.",
+    text: "Every variable set, PATH entry added, link moved and file written is printed under the command's own message. Nothing changes quietly.",
   },
   {
-    title: "JSON for editors and scripts",
-    text: "Add --json to list, search, install, upgrade, use or remove for exactly one JSON document on stdout, errors included, with a versioned schema.",
+    title: "Checked downloads",
+    text: "HTTPS only, checked against the SHA-256 (or stronger) its source publishes before anything is unpacked. No checksum, no install, unless you ask for it. A failed install leaves nothing behind.",
   },
   {
-    title: "Linux and macOS",
-    text: "Native builds for x64 and arm64: an apt repository, .deb and .rpm packages, and macOS binaries for Apple Silicon and Intel. Windows is planned.",
+    title: "status and doctor",
+    text: "jkit status shows which version is active here and why. jkit doctor checks your setup and says how to fix each problem it finds.",
+  },
+  {
+    title: "Native, no JDK needed",
+    text: "A single binary built with GraalVM that starts in milliseconds. Linux and macOS on x64 and arm64, with signed and notarized macOS builds; Windows as a preview.",
   },
 ];
 ---
@@ -46,11 +46,11 @@ const features = [
   <section class="hero">
     <div class="wrap hero-grid">
       <div>
-        <p class="badge">v{version} · Linux and macOS · x64 and arm64</p>
-        <h1>Install and switch JDKs, Maven and Gradle.</h1>
+        <p class="badge">v{version} · Linux, macOS and Windows (preview)</p>
+        <h1>Install and switch JDKs, Maven, Gradle and sbt.</h1>
         <p class="lead">
-          jkit is one small native command for Linux and macOS. Name a version, and an optional
-          vendor, and it does the rest. No bash scripts, no JDK required.
+          jkit is one small native command. Name a version, and an optional vendor, and it does
+          the rest: per shell, per project or globally. No bash scripts, and no JDK needed to run it.
         </p>
         <p class="ctas">
           <a class="btn primary" href={url("install")}>Install jkit</a>
@@ -59,16 +59,17 @@ const features = [
         </p>
       </div>
       <pre class="term" aria-label="Example terminal session"><span class="prompt">$ </span><span class="cmd">jkit install jdk@21</span>
-<span class="dim">downloading jdk 21.0.13+9 temurin from github.com</span>
-installed jdk 21.0.13+9 temurin
+<span class="dim">downloading jdk 21.0.13.1+2 temurin from github.com</span>
+installed jdk 21.0.13.1+2 temurin → ~/.jkit/tools/jdk/21.0.13.1+2-temurin
+<span class="dim">  link   ~/.jkit/global/jdk → ~/.jkit/tools/jdk/21.0.13.1+2-temurin</span>
 <span class="prompt">$ </span><span class="cmd">jkit install jdk@17 zulu</span>
-installed jdk 17.0.21+9 zulu
-<span class="prompt">$ </span><span class="cmd">jkit use jdk@21 --global</span>
-global jdk → 21.0.13+9 temurin
+installed jdk 17.0.21.1+2 zulu → ~/.jkit/tools/jdk/17.0.21.1+2-zulu
 <span class="prompt">$ </span><span class="cmd">jkit use jdk@17 zulu</span>
-using jdk 17.0.21+9 zulu in this shell
+using jdk 17.0.21.1+2 zulu in this shell
+<span class="dim">  set    JAVA_HOME=~/.jkit/tools/jdk/17.0.21.1+2-zulu
+  PATH   + ~/.jkit/tools/jdk/17.0.21.1+2-zulu/bin</span>
 <span class="prompt">$ </span><span class="cmd">java -version</span>
-openjdk version "17.0.21" 2026-10-20 LTS</pre>
+openjdk version "17.0.21.1" 2026-11-17 LTS</pre>
     </div>
   </section>
 
@@ -82,6 +83,25 @@ openjdk version "17.0.21" 2026-10-20 LTS</pre>
         </article>
       ))}
     </div>
+  </section>
+
+  <section class="wrap">
+    <h2>Versions that follow the project</h2>
+    <p>
+      Pin a version once and commit the <code>jkit.toml</code>. With the hook's auto-switch on,
+      the shell switches when you <code>cd</code> into the project and back when you leave, and
+      says each time what it changed.
+    </p>
+    <pre class="term"><span class="prompt">$ </span><span class="cmd">jkit pin jdk@21</span>
+pinned jdk 21 in ~/src/app/jkit.toml
+<span class="prompt">$ </span><span class="cmd">cd ~/src/app</span>
+jkit: using ~/src/app/jkit.toml: jdk 21.0.13.1+2 temurin
+<span class="dim">  set    JAVA_HOME=~/.jkit/tools/jdk/21.0.13.1+2-temurin
+  PATH   + ~/.jkit/tools/jdk/21.0.13.1+2-temurin/bin</span>
+<span class="prompt">$ </span><span class="cmd">cd ~</span>
+jkit: left the project in ~/src/app: back to the global versions
+<span class="dim">  set    JAVA_HOME=~/.jkit/global/jdk
+  PATH   - ~/.jkit/tools/jdk/21.0.13.1+2-temurin/bin</span></pre>
   </section>
 
   <section class="wrap">
@@ -126,29 +146,30 @@ versions per vendor: jkit search jdk@&lt;major&gt;</span></pre>
     <h2>Why not SDKMAN?</h2>
     <p>
       SDKMAN is great, but it is written in bash, so on Windows it needs WSL or Git Bash. jkit is a
-      single native binary that needs no bash, so Windows support is planned without WSL. It has
-      its own command design: version ranges like
-      <code>jdk@21</code>, an optional vendor instead of IDs like <code>21.0.5-tem</code>, no
-      interactive prompts, and a clear difference between this shell and the global default.
+      single native binary that runs in PowerShell too. It has its own command design: version
+      prefixes like <code>jdk@21</code>, an optional vendor instead of IDs like
+      <code>21.0.5-tem</code>, no interactive prompts, and a clear difference between this shell,
+      the project and the global default. It reads <code>.sdkmanrc</code>, so a team can switch
+      one person at a time.
     </p>
   </section>
 
   <section class="wrap status">
     <h2>Status</h2>
     <p class="note">
-      jkit is a working prototype. <code>search</code>, <code>install</code>, <code>upgrade</code>,
-      <code>use</code>, <code>reset</code>, <code>list</code>, <code>remove</code>, the shell hook,
-      tab completion and <code>--json</code> work, and every release is tested on Linux and macOS.
-      Project files (<code>jkit.toml</code>, <code>.sdkmanrc</code>, <code>.tool-versions</code>),
-      <code>status</code>, <code>doctor</code>, self-update and Windows are next. See the
-      <a href={url("docs")}>docs</a> for the full list.
+      jkit {version} is the first public release. Linux and macOS are tested on every release;
+      Windows works but is a preview: switching on <code>cd</code> and
+      <code>jkit hook --install</code> aren't available in PowerShell yet. Also not yet: a
+      <code>config</code> command, <code>prune</code>, self-update and vendor signature checks.
+      Bugs and ideas are welcome in the <a href={`${repo}/issues`}>issue tracker</a>.
     </p>
   </section>
 </Layout>
 
 <style>
   .hero { background: var(--bg-soft); border-bottom: 1px solid var(--border); padding: 48px 0; }
-  .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; }
+  .hero-grid { display: grid; grid-template-columns: 4fr 7fr; gap: 32px; align-items: center; }
+  .hero .term { font-size: 0.72em; }
   .hero h1 { font-size: clamp(1.9rem, 4vw, 2.6rem); margin: 0.3em 0; }
   .lead { font-size: 1.15em; color: var(--muted); }
   .badge {

@@ -1,18 +1,56 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { repoDoc, url } from "../lib/site";
+import { repo, repoDoc, url } from "../lib/site";
 
-const commands = [
-  { cmd: "jkit search <tool>[@version] [vendor]", what: "Lists available versions. For jdk: a grid of vendors against major versions, with LTS releases and installed builds marked; jdk@21 lists each vendor's newest 21 build. --maintained hides end-of-life versions; --pre adds pre-releases; --fx shows JavaFX builds." },
-  { cmd: "jkit install <tool>@<version> [vendor]", what: "Resolves the newest matching version, downloads it, checks its checksum and installs it. --fx installs a JavaFX build, kept beside the plain one. Never prompts." },
-  { cmd: "jkit upgrade [tool[@major]] [vendor]", what: "Installs the newest build within each installed major version (21.0.5 → 21.0.9, never 21 → 25). Older builds stay installed; --global moves along when it pointed at that line's newest build. --dry-run shows what would change." },
-  { cmd: "jkit use <tool>@<version> [vendor]", what: "Activates an installed version in this shell only (needs the shell hook). Plain builds win over JavaFX builds unless you add --fx." },
-  { cmd: "jkit use <tool>@<version> [vendor] --global", what: "Makes it the default for new shells and apps." },
-  { cmd: "jkit reset <tool>", what: "Clears a shell-level choice; the global version applies again." },
-  { cmd: "jkit list", what: "Shows what is installed, which version is global or active in this shell, and which builds bundle JavaFX. Never uses the network." },
-  { cmd: "jkit remove <tool>@<version> [vendor]", what: "Removes installed versions. Refuses a global or active version unless you add --force; asks for --all when several match. --fx removes JavaFX builds." },
-  { cmd: "jkit hook <shell>", what: "Prints the shell hook for bash, zsh or fish. For bash and zsh it includes tab completion." },
-  { cmd: "jkit completion [bash]", what: "Prints the bash completion script: commands, options, tools and common vendors. The Linux packages install it, and the shell hook loads it, so you rarely need this directly. Works in zsh through bashcompinit." },
+const groups = [
+  {
+    title: "Find and install",
+    commands: [
+      { cmd: "jkit search <tool>[@version] [vendor]", what: "Lists the versions available to install. For jdk: a grid of vendors against major versions, with LTS releases and installed builds marked; jdk@21 lists each vendor's newest 21 build, and jdk@21 zulu every Zulu 21 build. --maintained hides end-of-life versions, --pre adds pre-releases, --fx shows JavaFX builds." },
+      { cmd: "jkit install <tool>[@version] [vendor]", what: "Resolves the newest matching version, downloads it, checks its checksum and installs it. The first install of a tool also becomes its global default (--no-default to skip). --fx installs a JavaFX build beside the plain one. Never prompts." },
+      { cmd: "jkit upgrade [tool[@major]] [vendor]", what: "Installs the newest build of each installed major version (21.0.5 → 21.0.9, never 21 → 25). A global default that pointed at the old build moves along; old builds stay. --dry-run shows what would change." },
+      { cmd: "jkit list", what: "Shows what is installed, which version is global or active in this shell, and which builds bundle JavaFX. Never uses the network." },
+      { cmd: "jkit remove <tool>@<version> [vendor]", what: "Removes installed versions. Refuses one that is global or chosen in this shell unless you add --force; asks for --all when several match." },
+    ],
+  },
+  {
+    title: "Switch",
+    commands: [
+      { cmd: "jkit use <tool>@<version> [vendor]", what: "Activates an installed version in this shell only (needs the shell hook)." },
+      { cmd: "jkit use <tool>@<version> [vendor] --global", what: "Makes it the default for new shells and apps. Works without the hook." },
+      { cmd: "jkit reset <tool> [--global]", what: "Clears this shell's choice, so the project's or the global version applies again; with --global, clears the global default." },
+    ],
+  },
+  {
+    title: "Projects",
+    commands: [
+      { cmd: "jkit pin <tool>[@version] [vendor]", what: "Records a version in the project's jkit.toml, creating it if needed; only that tool's line changes. Without a version, pins what this shell uses. --exact writes the full build." },
+      { cmd: "jkit unpin <tool>", what: "Removes a tool from the project's jkit.toml." },
+      { cmd: "jkit sync", what: "Installs what the project file pins, and switches this shell to it. --dry-run shows what it would install." },
+    ],
+  },
+  {
+    title: "Scripts, CI and agents",
+    commands: [
+      { cmd: "jkit exec [tool@version [vendor]]... -- <command>", what: "Runs one command with the versions jkit picks: the global ones, overridden by the project file, overridden by tools named before --. No hook, no shell change; exits with the command's exit code." },
+      { cmd: "jkit env", what: "Prints the environment for a new process here, as shell code: eval \"$(jkit env)\". --json for tools." },
+    ],
+  },
+  {
+    title: "Check",
+    commands: [
+      { cmd: "jkit status", what: "Shows which version of each tool is active here, and why: the shell, the project file or the global default." },
+      { cmd: "jkit doctor", what: "Checks your setup (the hook, PATH order, links, installs, the project file) and says how to fix each problem. Changes nothing. --network also checks that the download sites can be reached." },
+    ],
+  },
+  {
+    title: "Shell",
+    commands: [
+      { cmd: "jkit hook --install [--auto-switch]", what: "Adds the hook to your shell's startup file (bash, zsh or fish), and with --auto-switch turns on switching on cd. --uninstall takes it out again." },
+      { cmd: "jkit hook <shell>", what: "Prints the hook for bash, zsh, fish or pwsh, to load by hand. For bash and zsh it includes tab completion." },
+      { cmd: "jkit completion", what: "Prints the bash completion script (zsh through bashcompinit). The hook and the Linux packages already load it." },
+    ],
+  },
 ];
 
 const vendors = [
@@ -34,78 +72,140 @@ const vendors = [
   ["jetbrains", "JetBrains Runtime"],
 ];
 
-const planned = [
-  "Project files: jkit.toml, .sdkmanrc, .tool-versions and .java-version, with pin, sync and sync --frozen",
-  "status, env, exec, doctor, init, prune, outdated",
-  "sbt as a fifth tool",
-  "config get / set / list",
-  "self update and a daily update notice",
-  "Opt-in Gradle and Maven toolchain integration",
-  "Windows builds, signed macOS builds, Homebrew, Scoop and winget",
+const notYet = [
+  "Switching on cd, and jkit hook --install, in PowerShell",
+  "Native fish and zsh completion",
+  "A config command, and prune for old builds",
+  "Self-update",
+  "Vendor signature checks (downloads are checked against published checksums today)",
+  "A native Windows on ARM build (the x64 build runs under emulation)",
 ];
 ---
 
-<Layout title="jkit docs" description="jkit command reference: search, install, upgrade, use, reset, list, remove, the shell hook and --json output.">
+<Layout title="jkit docs" description="jkit documentation: versions and vendors, every command, project files, the shell hook, settings and --json output.">
   <div class="prose">
     <h1>Docs</h1>
     <p>
       New here? Start with <a href={url("install")}>Install</a>. This page covers how versions and
-      vendors are written, every command in the current prototype, and what comes next.
+      vendors are written, every command, project files, settings and JSON output. Every command
+      also has <code>jkit &lt;command&gt; --help</code>.
     </p>
 
-    <h2>Tools, versions and vendors</h2>
+    <h2 id="specs">Tools, versions and vendors</h2>
     <p>
-      jkit manages four tools: <code>jdk</code>, <code>maven</code>, <code>gradle</code> and
-      <code>graalvm</code>. Write a tool as <code>tool@version</code>; the version is a prefix, so
-      <code>jdk@21</code> means the newest 21 and <code>jdk@21.0.5</code> narrows it further.
-      Leave the version out for the newest release.
+      jkit manages five tools: <code>jdk</code>, <code>graalvm</code>, <code>maven</code>,
+      <code>gradle</code> and <code>sbt</code>. Write a tool as <code>tool@version</code>; the
+      version is a prefix, so <code>jdk@21</code> means the newest 21 and
+      <code>jdk@21.0.5</code> narrows it further. Leave the version out, or write
+      <code>@latest</code>, for the newest release; <code>jdk@lts</code> is the newest
+      long-term-support one.
     </p>
     <p>
       For <code>jdk</code> and <code>graalvm</code>, add a vendor after the spec:
       <code>jkit install jdk@21 zulu</code>. Without one, jkit uses your default vendor, Temurin
-      unless you set <code>jdk.vendor</code> in <code>~/.jkit/config.toml</code> or
-      <code>JKIT_JDK_VENDOR</code>. jkit never quietly swaps to another vendor; if yours has no
-      build, it tells you who does.
+      unless you set one in <a href="#settings">the settings</a>. jkit never quietly swaps to
+      another vendor; if yours has no build, it tells you who does.
     </p>
     <pre><code>jkit install jdk@21              # newest 21 from the default vendor
-jkit install jdk@21 zulu         # newest Zulu 21
+jkit install jdk@lts zulu        # newest long-term-support Zulu
 jkit install maven@3.9
 jkit install gradle@9
-jkit install graalvm@25          # GraalVM-based vendors only</code></pre>
+jkit install sbt
+jkit install graalvm@25          # GraalVM-based vendors only, kept in GRAALVM_HOME</code></pre>
 
-    <h2>Commands</h2>
-    <table>
-      <thead><tr><th>Command</th><th>What it does</th></tr></thead>
-      <tbody>
-        {commands.map((c) => (
-          <tr><td><code>{c.cmd}</code></td><td>{c.what}</td></tr>
-        ))}
-      </tbody>
-    </table>
+    <h2 id="commands">Commands</h2>
+    {groups.map((g) => (
+      <>
+        <h3>{g.title}</h3>
+        <table>
+          <thead><tr><th>Command</th><th>What it does</th></tr></thead>
+          <tbody>
+            {g.commands.map((c) => (
+              <tr><td><code>{c.cmd}</code></td><td>{c.what}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </>
+    ))}
     <p>
-      <code>--refresh</code> fetches version lists again (they are cached for 24 hours);
-      <code>--offline</code> uses only the cache. When <code>use</code> or <code>remove</code>
-      finds no installed match, jkit prints the install command and exits with code 3.
+      Version lists are cached for 24 hours: <code>--refresh</code> fetches them again and
+      <code>--offline</code> uses only the cache.
+    </p>
+
+    <h2 id="projects">Project files</h2>
+    <p>
+      A <code>jkit.toml</code> records the versions a repository builds with. jkit also reads an
+      existing <code>.sdkmanrc</code>, <code>.tool-versions</code> or <code>.java-version</code>,
+      so you don't have to convert a project to try it.
+    </p>
+    <pre><code>{`# Versions jkit uses in this project: jkit sync installs them.
+[tools]
+jdk = "21"                                        # newest installed 21, any vendor
+maven = "3.9"
+gradle = "8.14.3"                                 # exact
+graalvm = { version = "25", vendor = "graalvm-ce" }`}</code></pre>
+    <p>
+      <code>jkit pin</code> writes it and <code>jkit sync</code> installs what it pins. With
+      auto-switch on (<code>jkit hook --install --auto-switch</code>), bash, zsh and fish switch to
+      the project's versions when you <code>cd</code> into it and back when you leave. A version
+      chosen in the shell with <code>jkit use</code> keeps winning until <code>jkit reset</code>.
+      The full format, and how the other files map, is in
+      <a href={repoDoc("project-files.md")}>docs/project-files.md</a>.
     </p>
 
     <h2 id="changes">What jkit changed</h2>
     <p>
-      <code>use</code>, <code>reset</code>, <code>install</code>, <code>upgrade</code> and
-      <code>remove</code> print what they changed outside <code>~/.jkit</code>, indented under
-      their usual message: each variable set or unset, <code>PATH</code> entries added or removed,
-      and global links moved or deleted. <code>use --global</code> also says what it means for
-      this shell, for example when a <code>JAVA_HOME</code> set outside jkit still wins or the
-      shell hook isn't loaded.
+      Every command that changes something prints it, indented under its usual message: each
+      variable set or unset, <code>PATH</code> entries added or removed, global links moved, and
+      files and folders created or deleted. It also says what that means for this shell and new
+      ones, for example when a <code>JAVA_HOME</code> set outside jkit still wins.
     </p>
+
+    <h2 id="environment">Environment variables jkit sets</h2>
+    <table>
+      <thead><tr><th>Variable</th><th>Points to</th></tr></thead>
+      <tbody>
+        <tr><td><code>JAVA_HOME</code></td><td>The active JDK</td></tr>
+        <tr><td><code>MAVEN_HOME</code>, <code>GRADLE_HOME</code>, <code>SBT_HOME</code></td><td>The active Maven, Gradle and sbt</td></tr>
+        <tr><td><code>GRAALVM_HOME</code></td><td>The <code>graalvm</code> slot, or the active JDK when it is GraalVM-based. Never put on <code>PATH</code>.</td></tr>
+        <tr><td><code>PATH</code></td><td>The active versions' <code>bin</code> folders, ahead of the global ones</td></tr>
+      </tbody>
+    </table>
+    <p>
+      The global default is a link, <code>~/.jkit/global/&lt;tool&gt;</code>. Point an IDE at
+      <code>~/.jkit/global/jdk</code> and it follows <code>jkit use … --global</code>.
+    </p>
+
+    <h2 id="settings">Settings</h2>
+    <p>In <code>~/.jkit/config.toml</code>:</p>
+    <pre><code>{`[jdk]
+vendor = "temurin"        # default JDK vendor
+[graalvm]
+vendor = "graalvm-ce"     # default GraalVM vendor
+[shell]
+auto_switch = true        # switch to a project's versions on cd`}</code></pre>
+    <table>
+      <thead><tr><th>Environment variable</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>JKIT_HOME</code></td><td>Where installs, links and settings live (default <code>~/.jkit</code>)</td></tr>
+        <tr><td><code>JKIT_JDK_VENDOR</code>, <code>JKIT_GRAALVM_VENDOR</code></td><td>Default vendors, over <code>config.toml</code></td></tr>
+        <tr><td><code>JKIT_AUTO_SWITCH</code></td><td><code>1</code> or <code>0</code>: switch on <code>cd</code></td></tr>
+        <tr><td><code>JKIT_PROJECT_FILE</code></td><td>Use this project file; empty turns project files off</td></tr>
+        <tr><td><code>JKIT_NETWORK_OFFLINE</code></td><td><code>1</code> or <code>true</code>: like <code>--offline</code></td></tr>
+        <tr><td><code>HTTPS_PROXY</code>, <code>NO_PROXY</code></td><td>A proxy (or <code>JKIT_NETWORK_PROXY</code>)</td></tr>
+        <tr><td><code>JKIT_SOURCES_FOOJAY_URL</code> and <code>_GRADLE_</code>, <code>_MAVEN_</code>, <code>_SBT_</code></td><td>HTTPS mirrors</td></tr>
+      </tbody>
+    </table>
 
     <h2 id="json">JSON output</h2>
     <p>
       For editors, IDEs and scripts: add <code>--json</code> to <code>list</code>,
-      <code>search</code>, <code>install</code>, <code>upgrade</code>, <code>use</code> or
-      <code>remove</code> and jkit prints exactly one JSON document on stdout, also when it fails.
-      Progress and messages go to stderr. Every document starts with
-      <code>"schemaVersion": 1</code>; fields may be added, but removing or renaming one bumps
-      the version.
+      <code>status</code>, <code>env</code>, <code>doctor</code>, <code>search</code>,
+      <code>install</code>, <code>upgrade</code>, <code>use</code>, <code>pin</code>,
+      <code>unpin</code>, <code>sync</code> or <code>remove</code>, and jkit prints exactly one
+      JSON document on stdout, also when it fails. Progress and messages go to stderr. Every
+      document starts with <code>"schemaVersion": 1</code>; fields may be added, but removing or
+      renaming one bumps the version.
     </p>
     <pre><code>{`$ jkit use jdk@99 --json
 {
@@ -122,25 +222,11 @@ jkit install graalvm@25          # GraalVM-based vendors only</code></pre>
       <a href={repoDoc("json.md")}>docs/json.md</a>.
     </p>
 
-    <h2>Environment variables jkit sets</h2>
-    <table>
-      <thead><tr><th>Variable</th><th>Points to</th></tr></thead>
-      <tbody>
-        <tr><td><code>JAVA_HOME</code></td><td>The active JDK</td></tr>
-        <tr><td><code>MAVEN_HOME</code></td><td>The active Maven</td></tr>
-        <tr><td><code>GRADLE_HOME</code></td><td>The active Gradle</td></tr>
-        <tr><td><code>GRAALVM_HOME</code></td><td>The <code>graalvm</code> slot, or the active JDK when it is GraalVM-based. Never put on <code>PATH</code>.</td></tr>
-        <tr><td><code>PATH</code></td><td>The active versions' <code>bin</code> folders, ahead of the global ones</td></tr>
-      </tbody>
-    </table>
+    <h2 id="vendors">Vendors</h2>
     <p>
-      Installs live in <code>~/.jkit</code>; set <code>JKIT_HOME</code> to use another folder.
-    </p>
-
-    <h2>Vendors</h2>
-    <p>
-      Versions come from the <a href="https://api.foojay.io/swagger-ui">foojay Disco API</a>, so
-      any vendor it lists works under its foojay name. The usual ones:
+      JDK versions come from the <a href="https://api.foojay.io/swagger-ui">foojay Disco API</a>,
+      so any vendor it lists works under its foojay name; <code>jkit search jdk</code> shows them
+      all. The usual ones:
     </p>
     <table>
       <thead><tr><th>Name</th><th>Distribution</th></tr></thead>
@@ -151,9 +237,27 @@ jkit install graalvm@25          # GraalVM-based vendors only</code></pre>
       </tbody>
     </table>
 
-    <h2>Planned</h2>
+    <h2 id="security">Downloads and security</h2>
+    <p>
+      Downloads come over HTTPS only and are checked against the checksum their source publishes
+      before anything is unpacked. SHA-256 or stronger counts as verified; old Maven releases with
+      only SHA-1 install with a warning, marked unverified; a download with no checksum is refused
+      unless you add <code>--allow-unverified</code>. Archives are checked for links and paths that
+      would leave the install folder. See <a href={`${repo}/blob/main/SECURITY.md`}>SECURITY.md</a>,
+      which also says how to report a vulnerability privately.
+    </p>
+
+    <h2 id="more">More</h2>
     <ul>
-      {planned.map((p) => <li>{p}</li>)}
+      <li><a href={repoDoc("troubleshooting.md")}>Troubleshooting</a>: <code>status</code>, <code>doctor</code> and <code>env</code></li>
+      <li><a href={repoDoc("agents.md")}>Scripts, CI and AI agents</a>: <code>jkit exec</code></li>
+      <li><a href={repoDoc("project-files.md")}>Project files</a>: the full format</li>
+      <li><a href={repoDoc("json.md")}>JSON output</a>: every document</li>
+    </ul>
+
+    <h2 id="not-yet">Not yet</h2>
+    <ul>
+      {notYet.map((p) => <li>{p}</li>)}
     </ul>
   </div>
 </Layout>
