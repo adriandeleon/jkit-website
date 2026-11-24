@@ -1,0 +1,53 @@
+/* jkit brand on top of Starlight: ink navy and the wordmark's teal. */
+:root {
+  --sl-color-accent-low: #0b3a36;
+  --sl-color-accent: #22b8a6;
+  --sl-color-accent-high: #a7f3e8;
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #e8eaf2;
+  --sl-color-gray-2: #c4c8d8;
+  --sl-color-gray-3: #8c92aa;
+  --sl-color-gray-4: #555b74;
+  --sl-color-gray-5: #353a4e;
+  --sl-color-gray-6: #232736;
+  --sl-color-black: #1b1e2a;
+}
+:root[data-theme="light"] {
+  --sl-color-accent-low: #ccf5ee;
+  --sl-color-accent: #0f766e;
+  --sl-color-accent-high: #0b4a45;
+  --sl-color-white: #1b1e2a;
+  --sl-color-gray-1: #232736;
+  --sl-color-gray-2: #353a4e;
+  --sl-color-gray-3: #555b74;
+  --sl-color-gray-4: #8c92aa;
+  --sl-color-gray-5: #c4c8d8;
+  --sl-color-gray-6: #e8eaf2;
+  --sl-color-gray-7: #f4f5f9;
+  --sl-color-black: #ffffff;
+}
+
+.site-title img { height: 1.6rem; width: auto; }
+
+/* Landing page */
+.hero .tagline { font-size: var(--sl-text-xl); }
+.compare-table th:first-child,
+.compare-table td:first-child { font-weight: 600; }
+.compare-table td { vertical-align: top; }
+.yes { color: var(--sl-color-accent); font-weight: 600; }
+.no { color: var(--sl-color-gray-3); }
+.term {
+  background: #10131c;
+  color: #e6edf3;
+  border-radius: 0.6rem;
+  padding: 1rem 1.2rem;
+  font-family: var(--__sl-font-mono);
+  font-size: var(--sl-text-sm);
+  line-height: 1.55;
+  overflow-x: auto;
+  white-space: pre;
+  border: 1px solid #2a3042;
+}
+.term .p { color: #8b949e; user-select: none; }
+.term .c { color: #5eead4; }
+.term .d { color: #8b949e; }

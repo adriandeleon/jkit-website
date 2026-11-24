@@ -1,0 +1,287 @@
+---
+title: CI
+description: Use jkit in GitHub Actions, GitLab CI, Jenkins or any shell-based CI to build with the versions your jkit.toml pins.
+sidebar:
+  order: 12
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+This page is for whoever owns a project's CI. With jkit, CI builds with the same JDK, Maven,
+Gradle or sbt versions the project's `jkit.toml` pins for developers, so "works on my machine"
+and "works in CI" mean the same thing. Every jkit command is non-interactive, exits with a
+stable code, and can print JSON.
+
+The whole recipe is three steps:
+
+```bash
+# 1. install jkit (a release archive, checked against SHA256SUMS)
+# 2. install what jkit.toml pins
+jkit sync
+# 3. build with those versions
+jkit exec -- mvn -B verify
+```
+
+`jkit sync` without the shell hook only installs (it says the shell is unchanged), and
+`jkit exec` runs one command with the project's versions. You don't need the hook in CI.
+
+The examples assume a `jkit.toml` that pins `jdk` and `maven`. With the Maven or Gradle wrapper,
+pin only `jdk` and run `jkit exec -- ./mvnw -B verify` or `jkit exec -- ./gradlew build`.
+
+## Installing jkit in CI
+
+Each release has an archive per platform and a `SHA256SUMS` file. The archive names follow
+`jkit-<version>-<platform>.tar.gz`, where the platform is `linux-x64`, `linux-aarch64`,
+`macos-x64` or `macos-aarch64` (Windows: `jkit-<version>-windows-x64.zip`). Each archive holds
+`jkit`, `LICENSE` and `THIRD-PARTY-NOTICES`.
+
+```bash
+JKIT_VERSION=0.4.0
+base=https://github.com/adriandeleon/jkit/releases/download/v$JKIT_VERSION
+curl -fsSLO "$base/jkit-$JKIT_VERSION-linux-x64.tar.gz"
+curl -fsSLO "$base/SHA256SUMS"
+sha256sum -c SHA256SUMS --ignore-missing          # fails the step on a mismatch
+mkdir -p "$HOME/.local/bin"
+tar -xzf "jkit-$JKIT_VERSION-linux-x64.tar.gz" -C "$HOME/.local/bin" jkit
+```
+
+Pin the jkit version in CI, as you would any other tool, and bump it on purpose. The Linux build
+needs glibc 2.34 or newer (Ubuntu 22.04+, Debian 12+, RHEL 9+): not Alpine. On macOS, use
+`shasum -a 256 -c SHA256SUMS --ignore-missing`.
+
+## Per CI system
+
+<Tabs syncKey="ci">
+<TabItem label="GitHub Actions">
+
+```yaml title=".github/workflows/build.yml"
+name: Build
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      JKIT_VERSION: 0.4.0
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install jkit
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          base=https://github.com/adriandeleon/jkit/releases/download/v$JKIT_VERSION
+          curl -fsSLO "$base/jkit-$JKIT_VERSION-linux-x64.tar.gz"
+          curl -fsSLO "$base/SHA256SUMS"
+          sha256sum -c SHA256SUMS --ignore-missing
+          mkdir -p "$HOME/.local/bin"
+          tar -xzf "jkit-$JKIT_VERSION-linux-x64.tar.gz" -C "$HOME/.local/bin" jkit
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Cache JDKs and build tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.jkit/tools
+          key: jkit-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('jkit.toml') }}
+
+      - name: Install the project's versions
+        run: jkit sync
+
+      - name: Build
+        run: jkit exec -- mvn -B verify
+```
+
+The cache holds `~/.jkit/tools`, keyed on `jkit.toml`: a cache hit makes `jkit sync` report
+every pin as already installed, with no downloads.
+
+**Without `jkit exec` in every step.** To let later steps run `java`, `mvn` or `./gradlew`
+directly, write the project's environment to `$GITHUB_ENV` and `$GITHUB_PATH` once:
+
+```yaml
+      - name: Use the project's versions in later steps
+        run: |
+          jkit env --json > "$RUNNER_TEMP/jkit-env.json"
+          jq -r '.variables | to_entries[] | "\(.key)=\(.value)"' "$RUNNER_TEMP/jkit-env.json" >> "$GITHUB_ENV"
+          jq -r '.pathPrepend[]' "$RUNNER_TEMP/jkit-env.json" >> "$GITHUB_PATH"
+
+      - run: mvn -B verify
+```
+
+Within a single step, `env_script=$(jkit env)` followed by `eval "$env_script"` does the same
+for the rest of that step's script.
+
+</TabItem>
+<TabItem label="GitLab CI">
+
+```yaml title=".gitlab-ci.yml"
+build:
+  image: ubuntu:24.04
+  variables:
+    JKIT_VERSION: "0.4.0"
+    JKIT_HOME: "$CI_PROJECT_DIR/.jkit-home"
+  cache:
+    key:
+      files: [jkit.toml]
+    paths: [.jkit-home/tools]
+  before_script:
+    - apt-get update && apt-get install -y --no-install-recommends ca-certificates curl
+    - base=https://github.com/adriandeleon/jkit/releases/download/v$JKIT_VERSION
+    - curl -fsSLO "$base/jkit-$JKIT_VERSION-linux-x64.tar.gz"
+    - curl -fsSLO "$base/SHA256SUMS"
+    - sha256sum -c SHA256SUMS --ignore-missing
+    - tar -xzf "jkit-$JKIT_VERSION-linux-x64.tar.gz" -C /usr/local/bin jkit
+  script:
+    - jkit sync
+    - jkit exec -- mvn -B verify
+```
+
+GitLab caches only paths inside the project folder, so `JKIT_HOME` moves jkit's home there. It
+must be an absolute path. jkit refuses a home inside a folder that every user can write to
+(without the sticky bit `/tmp` has); if your runner's build folder is like that, the error names
+the folder, and you can use a `JKIT_HOME` elsewhere (without the cache) instead.
+
+An image that already has jkit and your JDKs (see [Docker](/guides/docker/)) skips the
+`before_script` and the downloads.
+
+</TabItem>
+<TabItem label="Jenkins">
+
+```groovy title="Jenkinsfile"
+pipeline {
+  agent any
+  stages {
+    stage('Toolchain') {
+      steps {
+        sh 'jkit sync'
+      }
+    }
+    stage('Build') {
+      steps {
+        sh 'jkit exec -- mvn -B verify'
+      }
+    }
+  }
+}
+```
+
+Install jkit on the agents once, like any other tool (a package, or the archive as above). On a
+long-lived agent, `~/.jkit` of the Jenkins user persists between builds, so a JDK is downloaded
+once per agent. When a build is aborted, Jenkins stops the `sh` step's processes; jkit passes a
+SIGTERM on to the command it runs and exits with that command's exit code.
+
+To clean old builds off long-lived agents now and then: `jkit prune` (it keeps global builds and
+anything the project in the current folder pins).
+
+</TabItem>
+<TabItem label="Any shell">
+
+```bash title="ci/build.sh"
+#!/usr/bin/env bash
+set -euo pipefail
+
+jkit sync                       # install the pins; exit 1 on a download or checksum problem
+jkit doctor                     # exit 1 if a check fails
+jkit exec -- mvn -B verify      # exits with mvn's own exit code
+```
+
+Or load the project's environment into the script once and call tools directly:
+
+```bash
+jkit sync
+env_script=$(jkit env)          # exits 3 if a pin isn't installed; set -e stops here
+eval "$env_script"              # JAVA_HOME, MAVEN_HOME, … and PATH for the rest of the script
+mvn -B verify
+```
+
+Keep the two lines apart: `eval "$(jkit env)"` on one line hides a failure of `jkit env` from
+`set -e`.
+
+</TabItem>
+</Tabs>
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Success |
+| `1` | Failure: a download, checksum or signature problem, a network error, a failed `doctor` check |
+| `2` | Bad arguments: an unknown tool, vendor or shell, or a version that isn't one |
+| `3` | The version isn't installed (`use`, `remove`, `exec`, and `env` for a pin with no install) |
+
+`jkit exec` exits with the command's own exit code, so a failing test run fails the step as
+usual. When jkit can't start the command it exits `126`, or `127` when the command isn't on the
+`PATH` it gives it. See [exit codes](/reference/exit-codes/).
+
+A pin that isn't installed makes `jkit env` and `jkit exec` exit `3` instead of running with half
+an environment, so a forgotten `jkit sync` fails loudly.
+
+## Checksums and unverified downloads
+
+`jkit sync` refuses a download whose source publishes no checksum (and no signature jkit can
+check). Check before a real run:
+
+```bash
+jkit sync --dry-run --json | jq -r '.tools[] | "\(.tool) \(.status)"'
+```
+
+A tool with status `would-refuse` needs `--allow-unverified`. Think twice before adding that flag
+to CI; it's usually better to pin a vendor that publishes checksums. See
+[security](/reference/security/).
+
+## `jkit doctor` as a gate
+
+`jkit doctor` changes nothing, uses the network only with `--network`, and exits `1` when any
+check fails. A missing shell hook is only a warning, so it doesn't fail CI. To act on specific
+checks, filter the JSON on `id` and `level` (messages are for people and may change):
+
+```bash
+jkit doctor --json | jq -e '[.checks[] | select(.level == "fail")] | length == 0'
+```
+
+`jkit doctor --network` also checks that foojay, services.gradle.org, Maven Central and GitHub
+can be reached, which helps on runners behind a proxy.
+
+## JSON for CI tooling
+
+`list`, `status`, `env`, `doctor`, `search`, `install`, `upgrade`, `use`, `pin`, `unpin`, `sync`
+and `remove` take `--json` and print exactly one JSON document on stdout, also when they fail.
+Progress and messages go to stderr. A failure looks like this:
+
+```json
+{
+  "schemaVersion": 1,
+  "error": {
+    "message": "jkit.toml wants jdk 11, not installed",
+    "hints": ["install it: jkit install jdk@11", "or ignore the project file: jkit env --no-project"],
+    "exitCode": 3
+  }
+}
+```
+
+See the [JSON reference](/reference/json/) and [Scripts](/guides/scripts/) for `jq` examples.
+
+## Caching and offline builds
+
+- **What to cache:** `~/.jkit/tools` (or `$JKIT_HOME/tools`). Key it on `jkit.toml`, so a changed
+  pin gets a fresh cache.
+- **Prefix pins and caches:** with `jdk = "21"`, a cache hit keeps the cached 21 build even after
+  a newer 21 is out, until the key changes. For builds you can reproduce exactly, pin the full
+  version with `jkit pin jdk@21 --exact`.
+- **No network at all:** on a cache hit, `jkit sync --offline` (or `JKIT_NETWORK_OFFLINE=1`)
+  checks that every pin is installed without contacting anything. `jkit exec` and `jkit env`
+  never use the network.
+- **Version lists** are cached under `~/.jkit/index/` for 24 hours. You can cache that folder
+  too, but the pins that matter are the installs in `tools/`.
+
+<Aside type="note">
+Project files are ignored when they or their folder belong to another user (other than root) or
+are writable by every user. CI workspaces are normally owned by the user the job runs as, so this
+rarely matters; when it does, `jkit status` and `jkit sync` say which file was ignored and why,
+and `JKIT_PROJECT_FILE=/full/path/to/jkit.toml` names the file directly. See
+[project files](/reference/project-files/).
+</Aside>
+
+## Behind a proxy or without internet
+
+See [Corporate networks](/guides/corporate-networks/) for `HTTPS_PROXY`, mirrors
+(`JKIT_SOURCES_*_URL`) and air-gapped runners.

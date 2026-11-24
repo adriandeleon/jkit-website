@@ -1,0 +1,107 @@
+---
+title: Why jkit
+description: What jkit does differently from SDKMAN, mise, asdf, jEnv, OS packages and installing JDKs by hand, and when one of those fits better.
+sidebar:
+  order: 1
+  label: Overview
+---
+import { LinkCard, CardGrid, Aside } from '@astrojs/starlight/components';
+
+There are good tools for installing and switching JDKs already. This page says what jkit does
+differently, compares it fairly with the common alternatives, and says when one of them is the
+better choice. It's for developers and teams deciding what to use.
+
+## The case for jkit
+
+**One native binary.** jkit is a single program built with GraalVM native image. It doesn't need a
+JDK, bash, curl or unzip to run. The same tool runs on Linux, macOS and
+Windows (Windows is a preview).
+
+**20+ JDK vendors in one place.** Versions come from the
+[foojay Disco API](https://api.foojay.io/swagger-ui): Temurin, Corretto, Zulu, Liberica, Oracle,
+Microsoft, SapMachine, Semeru, GraalVM and more. `jkit search jdk` shows them as one grid of
+vendors against releases, with LTS releases and your installs marked. Maven, Gradle and sbt are
+handled the same way.
+
+**Three scopes, one clear rule.** A version can be chosen for this shell (`jkit use`), for a
+project (`jkit.toml`, written by `jkit pin`) or globally (`jkit use … --global`). The narrower one
+wins: shell, then project, then global. `jkit status` tells you which one applied and why.
+
+**It says what it changed.** Every command that changes something prints each folder, link,
+file and variable it touched, and what that means for this shell and new ones:
+
+```console
+$ jkit use jdk@17 zulu
+using jdk 17.0.21.1+2 zulu in this shell
+  set    JKIT_SHELL_JDK=~/.jkit/tools/jdk/17.0.21.1+2-zulu
+  set    JAVA_HOME=~/.jkit/tools/jdk/17.0.21.1+2-zulu
+  PATH   + ~/.jkit/tools/jdk/17.0.21.1+2-zulu/bin
+  only this shell; for new shells too: jkit use jdk@17.0.21.1+2 zulu --global
+```
+
+**Checksums required, signatures checked.** Every download is checked against the checksum its
+source publishes before anything is unpacked, and a download without one is refused unless you
+pass `--allow-unverified`. Temurin, Microsoft and Corretto JDKs, Maven 3.9.0 and later, and sbt are
+also checked against the publisher's OpenPGP signature, with keys built into jkit. See
+[security](/reference/security/).
+
+**It explains problems.** `jkit status` shows what's active and why; `jkit doctor` checks the hook,
+`PATH` order, links, installs and the project file, and says how to fix each problem. Errors come
+with hints: the commands to try next.
+
+**Built for CI and agents.** `jkit exec jdk@17 -- mvn test` runs one command with chosen versions
+and no shell changes. Nothing ever prompts. `--json` gives one JSON document on stdout, also on
+failure, and exit codes are stable (`0` ok, `1` failure, `2` bad arguments, `3` not installed).
+See [AI agents](/guides/ai-agents/) and [CI](/guides/ci/).
+
+**Try it without converting a repository.** jkit reads `.sdkmanrc`, `.tool-versions` and
+`.java-version` as they are, and never writes them. Your teammates can keep their tools while you
+try jkit on the same project.
+
+## How it compares
+
+A summary as of November 2026, from each tool's own documentation. Tools change; where a detail
+depends on configuration or plugins, the table says so. Corrections are welcome as
+[issues](https://github.com/adriandeleon/jkit/issues).
+
+| | jkit | By hand | SDKMAN | mise | asdf | OS packages | jEnv |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Installs JDKs | Yes | You download and unpack | Yes | Yes, built in | Through the asdf-java plugin | Yes, the distribution's builds | No, registers JDKs you installed |
+| JDK vendors | 20+ (foojay) | Any | About 17 | Many (its own catalogue) | Many (plugin's release data) | Usually OpenJDK; some vendors run their own repositories | Any you install |
+| Maven, Gradle, sbt | Yes | By hand | Yes | Yes | Through plugins | Varies by distribution | No |
+| Runs natively on Windows | Yes (preview) | Yes | No (WSL or Git Bash) | Yes | Not documented | winget has JDK packages | No |
+| Needs bash | No | No | Yes | No | Not since 0.16; asdf-java needs bash 5 | No | Yes |
+| Per-project file | `jkit.toml` | No | `.sdkmanrc` | `mise.toml`, `.tool-versions` | `.tool-versions` | No | `.java-version` |
+| Switches on `cd` | Yes, opt-in (not PowerShell yet) | No | Yes, opt-in (`sdkman_auto_env`) | Yes | Yes, through shims | No | Yes, through shims |
+| Verifies downloads | Checksum required; signatures for some vendors | Up to you | Checksum when its service provides one | Checksum when its catalogue has one | SHA-256 from the plugin's release data | Signed packages | Not applicable |
+| For scripts and tools | `exec`, `--json`, stable exit codes, never prompts | Not applicable | Prompts unless `sdkman_auto_answer=true` | `exec`, `--json` on some commands | `asdf exec` | Package manager's own | Varies |
+| Reads other tools' files | `.sdkmanrc`, `.tool-versions`, `.java-version` | Not applicable | No | `.tool-versions`; `.java-version` and `.sdkmanrc` once enabled | `.java-version` with `legacy_version_file` | Not applicable | No |
+
+The per-tool pages have the details and command-by-command translations.
+
+## When something else fits better
+
+jkit does one job: Java toolchains. Pick something else when that isn't what you need.
+
+- **You manage many languages.** mise or asdf handle Node, Python, Ruby, Go and hundreds more with
+  one tool and one file. If you already use one of them, its Java support may be enough.
+- **You need SDKs beyond the JDK and build tools.** SDKMAN's catalogue has about 80 candidates:
+  Kotlin, Groovy, Scala, JBang, Spring Boot, Micronaut, Quarkus, JMeter, VisualVM and more. jkit
+  only covers JDKs, GraalVM, Maven, Gradle and sbt.
+- **Your servers are managed by configuration management.** On a server built by Ansible, Puppet
+  or a Dockerfile, with one Java version and security updates from the distribution, the
+  distribution's own packages are the simplest choice.
+
+<Aside>
+jkit reads `.sdkmanrc` and `.tool-versions`, so it can live alongside these tools on the same
+project while you decide. [Migrating](/guides/migrating/) covers moving over for good.
+</Aside>
+
+## Compared one by one
+
+<CardGrid>
+  <LinkCard title="jkit vs installing by hand" href="/why/vs-manual/" description="Download, verify, unpack, export JAVA_HOME, edit your profile." />
+  <LinkCard title="jkit vs SDKMAN" href="/why/vs-sdkman/" description="The closest alternative, and the one most Java developers know." />
+  <LinkCard title="jkit vs mise and asdf" href="/why/vs-mise-asdf/" description="General-purpose version managers with Java support." />
+  <LinkCard title="jkit vs OS packages and jEnv" href="/why/vs-os-packages/" description="apt, dnf and Homebrew JDKs, update-alternatives, and jEnv." />
+</CardGrid>

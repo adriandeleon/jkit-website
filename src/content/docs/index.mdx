@@ -1,0 +1,114 @@
+---
+title: Install and switch JDKs, Maven, Gradle and sbt
+description: jkit is one native command that installs and switches JDKs from 20+ vendors, GraalVM, Maven, Gradle and sbt, per shell, per project or globally, on Linux, macOS and Windows. It needs no JDK to run.
+template: splash
+pagefind: false
+hero:
+  title: Every JDK. One small command.
+  tagline: jkit installs and switches JDKs from 20+ vendors, GraalVM, Maven, Gradle and sbt, for this shell, this project or everywhere. It tells you everything it changes, and it doesn't need a JDK, bash or plugins to run.
+  actions:
+    - text: Get started
+      link: /start/quickstart/
+      icon: right-arrow
+    - text: Why jkit?
+      link: /why/overview/
+      variant: secondary
+    - text: GitHub
+      link: https://github.com/adriandeleon/jkit
+      icon: github
+      variant: minimal
+---
+
+import { Card, CardGrid, LinkCard, Tabs, TabItem } from '@astrojs/starlight/components';
+import LatestNews from '../../components/LatestNews.astro';
+import HeroTerminal from '../../components/HeroTerminal.astro';
+
+<HeroTerminal />
+
+## Install in a minute
+
+<Tabs syncKey="os">
+<TabItem label="macOS / Linux">
+```bash
+brew install adriandeleon/tap/jkit
+jkit hook --install          # then open a new shell
+jkit install jdk@21          # the first JDK you install becomes the default
+```
+</TabItem>
+<TabItem label="Debian / Ubuntu">
+```bash
+# after adding the Vitrina apt repository (see Install)
+sudo apt install jkit
+jkit hook --install          # then open a new shell
+jkit install jdk@21
+```
+</TabItem>
+<TabItem label="Windows (preview)">
+```powershell
+winget install AdrianDeLeon.jkit
+# add the hook to your PowerShell profile: see Install
+jkit install jdk@21
+```
+</TabItem>
+</Tabs>
+
+Fedora and RHEL packages, plain binaries and building from source are on the
+[install page](/start/install/).
+
+## Why jkit
+
+<CardGrid>
+  <Card title="One native binary" icon="rocket">
+    No JDK, no bash scripts, no plugins. It starts in milliseconds and runs the same way on Linux,
+    macOS and Windows.
+  </Card>
+  <Card title="20+ vendors, one grid" icon="list-format">
+    Temurin, Corretto, Zulu, Liberica, Oracle, GraalVM, SapMachine, Semeru, Microsoft and more.
+    `jkit search jdk` shows them all against every major version.
+  </Card>
+  <Card title="Shell, project or global" icon="setting">
+    `jkit use` for this shell, a `jkit.toml` for the project, `--global` for everything else.
+    One clear order between them, and `jkit status` says which one won.
+  </Card>
+  <Card title="Nothing changes quietly" icon="information">
+    Every variable, `PATH` entry, link and file a command touches is printed, even when the shell
+    switches JDK on `cd`.
+  </Card>
+  <Card title="Checked downloads" icon="approve-check">
+    HTTPS only, checked against the publisher's checksum, and for Temurin, Microsoft, Corretto,
+    Maven and sbt against their signature too. No checksum, no install.
+  </Card>
+  <Card title="Ready for CI and AI agents" icon="laptop">
+    It never prompts. `jkit exec -- mvn verify` runs one command with the project's versions;
+    `--json` and stable exit codes make it easy to script.
+  </Card>
+</CardGrid>
+
+## Compared with what you use today
+
+|  | jkit | Manual install | SDKMAN | mise / asdf | OS packages |
+| --- | --- | --- | --- | --- | --- |
+| Installs JDKs from 20+ vendors | ✓ | by hand | ✓ | through a plugin | your distro's builds |
+| Maven, Gradle and sbt | ✓ | by hand | ✓ | through plugins | some |
+| Runs without bash; native on Windows | ✓ | – | needs bash | varies | – |
+| Per-project versions, switch on `cd` | ✓ | – | ✓ | ✓ | – |
+| Reads `.sdkmanrc`, `.tool-versions`, `.java-version` | all three | – | its own | its own + some | – |
+| Refuses downloads with no checksum | ✓ | up to you | varies | varies | ✓ |
+| Never prompts; `--json` output | ✓ | – | – | partly | – |
+
+The [full comparison](/why/overview/) explains each row, and when another tool is the better fit.
+
+## Docs for everyone
+
+<CardGrid>
+  <LinkCard title="New to Java" href="/start/java-basics/" description="What a JDK, a vendor, LTS and JAVA_HOME are, and which one to pick." />
+  <LinkCard title="Switching from SDKMAN, asdf or mise" href="/guides/migrating/" description="Keep your project files and move over one person at a time." />
+  <LinkCard title="Teams and CI" href="/guides/ci/" description="GitHub Actions, GitLab CI, Jenkins and Docker, with versions from jkit.toml." />
+  <LinkCard title="AI agents and LLMs" href="/guides/ai-agents/" description="jkit exec, --json, and instructions to paste into AGENTS.md. Also llms.txt." />
+</CardGrid>
+
+## News
+
+<LatestNews />
+
+[All news](/news/) · [What's new in each release](/whats-new/)

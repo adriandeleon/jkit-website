@@ -1,0 +1,153 @@
+---
+title: Working in a team
+description: Share a project's JDK and build tool versions through a committed jkit.toml, onboard teammates in a few commands, and keep laptops and CI on the same builds.
+sidebar:
+  order: 3
+  label: Teams
+---
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+This guide is for team leads and anyone setting up a shared repository: how to make every
+teammate, and CI, build with the same JDK and tools. It builds on
+[Per-project versions](/guides/projects/).
+
+## Commit a jkit.toml
+
+In the repository root:
+
+```bash
+jkit pin jdk@21
+jkit pin maven@3.9            # or gradle, sbt; skip it if you use ./mvnw or ./gradlew
+git add jkit.toml
+git commit -m "Pin the JDK with jkit"
+```
+
+```toml title="jkit.toml"
+# Versions jkit uses in this project: jkit sync installs them.
+[tools]
+jdk = "21"
+maven = "3.9"
+```
+
+That's the whole setup. Anyone with jkit gets these versions with `jkit sync`, and their shell
+switches to them on `cd` if they turned auto-switch on.
+
+How strict to be:
+
+| Pin | Means | Good for |
+|---|---|---|
+| `jdk = "21"` | any 21, newest installed, any vendor (the user's default vendor first) | most teams |
+| `jdk = { version = "21", vendor = "temurin" }` | any Temurin 21 | when the vendor matters (support contracts, the vendor your servers run) |
+| `jdk = { version = "21.0.13.1+2", vendor = "temurin" }` | exactly that build | reproducible builds, release branches |
+
+`jkit pin jdk@21 temurin --exact` writes the last form for you.
+
+<Aside type="tip">
+If your builds use the Maven or Gradle wrapper (`./mvnw`, `./gradlew`), pin only the JDK. The
+wrapper already fixes the build tool's version; it only needs a JDK, which jkit provides through
+`JAVA_HOME`. See [Build tools](/guides/build-tools/).
+</Aside>
+
+## Onboarding a teammate
+
+Once jkit is installed ([Install](/start/install/)):
+
+<Steps>
+
+1. Add the shell hook, with switching on `cd`:
+
+   ```bash
+   jkit hook --install --auto-switch
+   ```
+
+2. Open a new shell, then in the repository:
+
+   ```bash
+   cd ~/src/app
+   jkit sync
+   ```
+
+   `jkit sync` installs what `jkit.toml` pins (from the teammate's default vendor when the pin
+   names none) and switches the shell to it.
+
+3. Check:
+
+   ```bash
+   jkit status
+   ```
+
+</Steps>
+
+From then on, every shell they open in the repository switches by itself, and back when they
+leave. When someone changes `jkit.toml` (say, to move to JDK 25), the others run `jkit sync`
+after pulling. Entering the project never downloads anything on its own; until they sync, the
+hook says which pin is missing.
+
+`jkit sync` doesn't set a global default. A teammate with no other JDK has Java only inside the
+project until they pick one with `jkit use jdk@… --global` (or `jkit install` a first JDK, which
+becomes the default).
+
+## Mixing jkit and SDKMAN users
+
+jkit reads `.sdkmanrc`, so a team can keep using it while some people move to jkit:
+
+```ini title=".sdkmanrc"
+java=21.0.5-tem
+maven=3.9.9
+```
+
+SDKMAN users run `sdk env`; jkit users run `jkit sync` (or let auto-switch do it). Both get
+Temurin 21.0.5 and Maven 3.9.9. jkit maps SDKMAN's vendor suffixes (`tem`, `zulu`, `amzn`,
+`librca` and the others in [Project files](/reference/project-files/)), and since SDKMAN ids have
+no build number, `21.0.5-tem` means the newest 21.0.5 build.
+
+Keep **one** file as the source of truth. If a folder has both `jkit.toml` and `.sdkmanrc`, jkit
+reads only `jkit.toml` and SDKMAN reads only `.sdkmanrc`, so they can drift apart. With mixed
+users, stay with `.sdkmanrc` and edit it by hand (`jkit pin` won't write it); once everyone uses
+jkit, replace it with a `jkit.toml`.
+
+The same works for asdf and mise users with `.tool-versions`, and for jEnv users with
+`.java-version`. See [Migrating](/guides/migrating/).
+
+## Keeping CI on the same versions
+
+CI should read the same file as the laptops, so a version change is one commit:
+
+```bash
+jkit sync                       # installs the pins
+jkit exec -- mvn -B verify      # runs with them
+```
+
+`jkit exec` doesn't need the hook, which CI steps usually don't have, and it exits with the
+build's exit code. Things to watch:
+
+- **Vendors.** A pin without a vendor installs from the CI machine's default vendor (Temurin,
+  unless `JKIT_JDK_VENDOR` is set). If developers use Zulu and CI uses Temurin, both satisfy
+  `jdk = "21"`. Name the vendor if that matters.
+- **Builds.** `jdk = "21"` takes the newest 21 at the time CI installs it, so CI can move to a
+  newer patch before a laptop does. Use an exact pin when that matters.
+- **Unchecked downloads.** `jkit sync` refuses a download whose source publishes no checksum,
+  unless you add `--allow-unverified`; a CI step stops there rather than installing unchecked
+  code.
+- **A missing pin is an error.** `jkit env` and `jkit exec` exit with code 3 when the project
+  pins a version that isn't installed, so a step never runs with half an environment.
+- **Gate on the setup.** `jkit doctor` exits 1 when a check fails.
+- **Bind mounts.** In Docker, a mounted repository can look world-writable, and jkit then ignores
+  its project file. Set `JKIT_PROJECT_FILE` to the file's absolute path.
+
+Full recipes for GitHub Actions, GitLab CI and Jenkins are in [CI](/guides/ci/), and for images
+in [Docker](/guides/docker/).
+
+## AI coding agents
+
+Agents (Claude Code, Codex, Cursor and others) run each command in a new shell, so `jkit use`
+doesn't stick for them; they should run builds through `jkit exec`. Put the short instructions
+from [AI agents](/guides/ai-agents/) in the repository's `AGENTS.md` or `CLAUDE.md`, next to the
+`jkit.toml`.
+
+## Files a newer jkit writes
+
+Unknown keys or tools in `jkit.toml` give a warning naming the file and line, not an error, so a
+file written for a newer jkit still works with an older one. Versions and vendors must be plain
+text (letters, digits, `. + _ -`); anything else is skipped with a warning, since the file comes
+from a cloned repository and its values are printed on every `cd`.

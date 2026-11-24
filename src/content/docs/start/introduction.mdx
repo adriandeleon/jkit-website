@@ -1,0 +1,81 @@
+---
+title: Introduction
+description: What jkit is, the three places a version can be chosen (shell, project, global), what it manages, and where it runs.
+sidebar:
+  order: 1
+---
+import { LinkCard, CardGrid } from '@astrojs/starlight/components';
+
+jkit installs and switches Java Development Kits (JDKs), Maven, Gradle and sbt. This page is for
+anyone deciding whether to use it, or about to install it: it says what jkit does in a few
+minutes of reading.
+
+jkit is one native program. It doesn't need Java, bash or anything else installed to run, and it
+runs on Linux, macOS and Windows. It never asks a question, and every change it makes
+(folders, links, variables) is printed as it happens.
+
+## Three scopes
+
+You pick a version in one of three places. When more than one applies, the narrower one wins:
+this shell, then the project, then the global default.
+
+**This shell only.** Try another JDK without touching anything else. Close the window and it's
+gone.
+
+```bash
+jkit use jdk@17 zulu          # this shell gets Zulu 17; other shells are unchanged
+```
+
+**This project.** Record the versions a repository builds with, in a `jkit.toml` you commit.
+Everyone who clones it runs `jkit sync` and gets the same versions.
+
+```bash
+jkit pin jdk@21               # writes jkit.toml in this project
+jkit sync                     # installs what it pins and switches this shell to it
+```
+
+**Global.** The default for new shells, and for IDEs and other programs that look at
+`~/.jkit/global/jdk`.
+
+```bash
+jkit use jdk@21 --global      # the default everywhere a project or shell doesn't say otherwise
+```
+
+Switching in a shell needs the shell hook, a few lines `jkit hook --install` adds to your shell's
+startup file. `--global`, `pin` and `jkit exec` work without it.
+
+## What it manages
+
+| Tool | Examples |
+| --- | --- |
+| JDKs from 20+ vendors | `jkit install jdk@21`, `jkit install jdk@lts zulu`, `jkit install jdk@17 corretto` |
+| GraalVM | `jkit install graalvm@25` (sets `GRAALVM_HOME`) |
+| Maven | `jkit install maven@3.9` |
+| Gradle | `jkit install gradle@8.14` |
+| sbt | `jkit install sbt` |
+
+JDK versions and vendors come from the [foojay Disco API](https://api.foojay.io/swagger-ui), so
+Eclipse Temurin (the default), Amazon Corretto, Azul Zulu, BellSoft Liberica, Oracle, Microsoft,
+SapMachine, IBM Semeru and many more are all a `jkit search jdk` away. Each download is checked
+against its published checksum, and some against the publisher's signature, before it is
+unpacked.
+
+jkit also reads the version files other tools leave in a repository (`.sdkmanrc`,
+`.tool-versions`, `.java-version`), so you can try it on an existing project without converting
+anything.
+
+## Where it runs
+
+- Linux x64 and arm64 (glibc 2.34 or newer: Debian 12+, Ubuntu 22.04+, Fedora, RHEL 9+)
+- macOS 15 or newer, Apple Silicon and Intel
+- Windows x64, as a preview: it works, but is less tested, and PowerShell doesn't switch on `cd`
+  yet. Windows on ARM runs the x64 build under emulation.
+
+## Where to go next
+
+<CardGrid>
+  <LinkCard title="Install jkit" href="/start/install/" description="Homebrew, apt, .deb and .rpm, winget, or a plain binary; then turn on the shell hook." />
+  <LinkCard title="Quickstart" href="/start/quickstart/" description="Five minutes from nothing to two JDKs, a global default and a pinned project." />
+  <LinkCard title="Java basics" href="/start/java-basics/" description="New to Java? JDKs, versions, vendors, JAVA_HOME and build tools, in plain words." />
+  <LinkCard title="Why jkit" href="/why/overview/" description="How jkit compares with SDKMAN, mise, asdf, OS packages and installing by hand." />
+</CardGrid>

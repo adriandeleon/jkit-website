@@ -1,0 +1,30 @@
+---
+// The newest News posts, for the home page.
+import { getCollection } from "astro:content";
+import { LinkCard } from "@astrojs/starlight/components";
+
+const posts = (
+  await getCollection(
+    "docs",
+    ({ id, data }) => id.startsWith("news/") && data.date && !(import.meta.env.PROD && data.draft),
+  )
+)
+  .sort((a, b) => b.data.date!.getTime() - a.data.date!.getTime())
+  .slice(0, 3);
+
+const fmt = new Intl.DateTimeFormat("en", { dateStyle: "long", timeZone: "UTC" });
+---
+
+<div class="latest-news">
+  {posts.map((p) => (
+    <LinkCard
+      title={p.data.title}
+      href={`/${p.id}/`}
+      description={`${fmt.format(p.data.date!)} · ${p.data.excerpt ?? p.data.description ?? ""}`}
+    />
+  ))}
+</div>
+
+<style>
+  .latest-news { display: grid; gap: 1rem; }
+</style>

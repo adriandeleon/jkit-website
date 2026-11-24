@@ -1,0 +1,203 @@
+---
+title: Windows
+description: Install and use jkit on Windows (a preview), set up the PowerShell hook by hand, and make the global JDK visible to cmd.exe and IDEs.
+sidebar:
+  order: 17
+---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+This page covers everything that is different on Windows. jkit runs on Windows x64, but this part
+is a **preview**: it is less tested than macOS and Linux, and a few things work only by hand. If
+something breaks, please [open an issue](https://github.com/adriandeleon/jkit/issues).
+
+What works the same: `search`, `install`, `upgrade`, `list`, `status`, `env`, `exec`, `pin`,
+`sync`, `doctor`, `remove`, `prune`, `config` and `self-update`, and `use` in a PowerShell with the
+hook loaded.
+
+What is different, in short:
+
+- The hook goes into your PowerShell profile **by hand**; `jkit hook --install` doesn't edit
+  PowerShell profiles yet.
+- PowerShell doesn't switch versions on `cd` yet. Run `jkit sync` in a project instead.
+- cmd.exe and IDEs see the global JDK only after you set `JAVA_HOME` once.
+- Windows on ARM runs the x64 build under emulation.
+
+## Install
+
+With winget:
+
+```powershell
+winget install AdrianDeLeon.jkit
+```
+
+The winget package appears once winget-pkgs has merged the release. Until then, or if you prefer,
+use the `.zip`:
+
+<Steps>
+
+1. Download `jkit-<version>-windows-x64.zip` from the
+   [releases page](https://github.com/adriandeleon/jkit/releases/latest). It holds `jkit.exe`,
+   `LICENSE` and `THIRD-PARTY-NOTICES`.
+
+2. Check it against the release's `SHA256SUMS`:
+
+   ```powershell
+   Get-FileHash .\jkit-0.4.0-windows-x64.zip -Algorithm SHA256
+   ```
+
+   The hash must match the line for that file in `SHA256SUMS` (PowerShell prints it in
+   uppercase; compare without regard to case).
+
+3. Unpack `jkit.exe` into a folder of its own, such as `%LOCALAPPDATA%\Programs\jkit`, and add
+   that folder to your user `Path` (search the Start menu for "Edit environment variables for
+   your account").
+
+4. Open a new PowerShell and check: `jkit --version`.
+
+</Steps>
+
+`jkit.exe` needs the Microsoft Visual C++ Redistributable (2015 or newer, x64). winget installs
+it along with jkit, and most machines already have it. If `jkit.exe` doesn't start after a
+`.zip` install, install it:
+
+```powershell
+winget install Microsoft.VCRedist.2015+.x64
+```
+
+## Load the hook in PowerShell
+
+The hook puts the global versions on `PATH`, sets `JAVA_HOME` and friends, and lets `jkit use`
+change the current PowerShell. Add it to your profile by hand:
+
+```powershell
+if (-not (Test-Path $PROFILE)) { New-Item -ItemType File -Path $PROFILE -Force }
+notepad $PROFILE
+```
+
+Add this line, save, and open a new PowerShell:
+
+```powershell title="Microsoft.PowerShell_profile.ps1"
+jkit hook pwsh | Out-String | Invoke-Expression
+```
+
+PowerShell 7 (`pwsh`) and Windows PowerShell 5.1 have separate profiles; add the line to each one
+you use. `jkit hook pwsh --install` stops with an error that prints this same line.
+
+Then:
+
+```powershell
+jkit install jdk@21        # the first JDK becomes the global default
+java -version
+jkit use jdk@17 zulu       # only this PowerShell (after jkit install jdk@17 zulu)
+jkit status
+```
+
+Without the hook, `jkit use` without `--global` can't change the shell, and says so.
+
+## Projects in PowerShell
+
+Switching on `cd` isn't available in PowerShell yet. In a project with a `jkit.toml` (or
+`.sdkmanrc`, `.tool-versions`, `.java-version`), run:
+
+```powershell
+jkit sync                  # installs the pins and switches this PowerShell to them
+```
+
+`jkit exec` works without the hook: `jkit exec -- mvn -v`. On Windows it looks for `.exe`, `.cmd`
+and `.bat` files on the `PATH` it gives the command, so `mvn` runs `mvn.cmd`.
+
+For a script, load the environment once:
+
+```powershell
+jkit env --shell pwsh | Out-String | Invoke-Expression
+```
+
+## Programs outside PowerShell
+
+`jkit use jdk@21 --global` points `%USERPROFILE%\.jkit\global\jdk` at the install. Only shells
+with the hook read it on their own. For cmd.exe, IDEs and anything else started from the desktop,
+set two user environment variables once:
+
+<Steps>
+
+1. Open "Edit environment variables for your account" from the Start menu.
+
+2. Add a variable `JAVA_HOME` with the full path of the link, such as
+   `C:\Users\you\.jkit\global\jdk`.
+
+3. Edit `Path` and add `%JAVA_HOME%\bin`.
+
+4. Sign out and in again, or restart the programs that should see it.
+
+</Steps>
+
+From then on, `jkit use jdk@… --global` changes the JDK for all of them, with no need to touch
+the variables again. The same works for Maven (`MAVEN_HOME`, `global\maven`) and Gradle
+(`GRADLE_HOME`, `global\gradle`).
+
+A hooked PowerShell leaves a `JAVA_HOME` that is already set alone; since it points at the same
+global folder, the result is the same.
+
+To point an IDE at a JDK directly, see [IDEs](/guides/ides/).
+
+## Files and folders
+
+| Path | What |
+| --- | --- |
+| `%USERPROFILE%\.jkit\tools\` | installed JDKs, Maven, Gradle and sbt |
+| `%USERPROFILE%\.jkit\global\` | the global defaults, as directory junctions |
+| `%USERPROFILE%\.jkit\index\` | cached version lists |
+| `%USERPROFILE%\.jkit\config.toml` | settings |
+
+The global links are directory junctions, which need neither admin rights nor Developer Mode.
+Next to each one, a small `.<name>.target` file (such as `.jdk.target`) records where it points,
+so jkit can still report a link whose install is gone.
+
+`JKIT_HOME` moves everything and must be an absolute path, such as `D:\jkit`. On Windows there are
+no POSIX owners, so the ownership checks jkit makes on Linux and macOS don't apply; the default
+permissions of your user profile protect `%USERPROFILE%\.jkit`. See
+[Shared machines](/guides/shared-machines/).
+
+## Updating jkit
+
+```powershell
+jkit self-update --check     # is a newer jkit out?
+jkit self-update
+```
+
+A jkit from winget is left to winget, and `self-update` prints the command:
+`winget upgrade AdrianDeLeon.jkit`. A jkit from the `.zip` is replaced in place after checking the
+download against the release's `SHA256SUMS`. Windows can't replace a running `.exe`, so the old
+one is renamed to `jkit.exe.old` and deleted by the next `self-update`.
+
+## Windows on ARM
+
+There is no native ARM build yet: winget installs the x64 build, which runs under Windows'
+x64 emulation. jkit then sees an x64 system, so the JDKs it installs are x64 builds and run under
+emulation too.
+
+## Known rough edges
+
+- **Antivirus.** Scanners can hold files that were just unpacked. jkit retries the final step of
+  an install for a while; a slow install right after a download is usually the scanner.
+- **Removing an install that is in use.** `jkit remove` moves the folder aside first, so when
+  something still has it open (an IDE, a Gradle daemon) nothing is touched and it says so. Stop
+  the program (`gradle --stop` for the daemon) and run it again.
+- **Paths with spaces** in `JAVA_HOME` set outside jkit, such as `"C:\Program Files\…"` with
+  quotes, are read without the quotes.
+
+## Uninstall
+
+```powershell
+notepad $PROFILE                                   # remove the jkit hook line
+Remove-Item -Recurse -Force "$env:USERPROFILE\.jkit"
+winget uninstall AdrianDeLeon.jkit                 # or delete jkit.exe from its folder
+```
+
+Remove the `JAVA_HOME` and `Path` entries you added by hand, too.
+
+<Aside type="tip">
+Working in WSL? The Linux jkit runs there and manages its own JDKs, separate from the Windows
+ones. See [WSL](/guides/wsl/).
+</Aside>

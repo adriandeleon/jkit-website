@@ -1,0 +1,151 @@
+---
+title: Quickstart
+description: Five minutes from nothing to two JDKs, a global default, a per-shell switch and a pinned project.
+sidebar:
+  order: 3
+---
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+This walk-through takes you from no jkit to two JDKs, a global default and a project with its own
+version, in about five minutes. It uses bash on Linux; zsh, fish and macOS look the same. If
+you're new to JDKs and vendors, [Java basics](/start/java-basics/) explains the words used here.
+
+<Steps>
+
+1. **Install jkit.** With Homebrew (macOS or Linux):
+
+   ```bash
+   brew install adriandeleon/tap/jkit
+   ```
+
+   For apt, `.deb`, `.rpm`, Windows and plain binaries, see [Install jkit](/start/install/).
+
+2. **Turn on the shell hook**, then open a new terminal window:
+
+   ```bash
+   jkit hook --install --auto-switch
+   ```
+
+   The hook lets `jkit use` change the shell you're in and puts your default versions on `PATH`.
+   `--auto-switch` also switches to a project's versions when you `cd` into it. On PowerShell,
+   [add the hook by hand](/start/install/#turn-on-the-shell-hook).
+
+3. **Install a JDK.** Without a vendor, jkit uses Eclipse Temurin. The first JDK you install
+   becomes your default:
+
+   ```console
+   $ jkit install jdk@21
+   downloading jdk 21.0.13.1+2 temurin from github.com
+   installed jdk 21.0.13.1+2 temurin → ~/.jkit/tools/jdk/21.0.13.1+2-temurin
+     folder ~/.jkit/tools/jdk/21.0.13.1+2-temurin created
+     link   ~/.jkit/global/jdk → ~/.jkit/tools/jdk/21.0.13.1+2-temurin
+     signature checked: signed by Adoptium (key 843C48A565F8F04B)
+     new shells with the jkit hook: JAVA_HOME=~/.jkit/global/jdk, PATH includes ~/.jkit/global/jdk/bin
+     JAVA_HOME is not set in this shell yet; open a new shell, or: jkit reset jdk
+     it's the default jdk now (the first one installed); to clear it: jkit reset jdk --global
+   ```
+
+   jkit checked the download against its checksum and Adoptium's signature, and printed every
+   folder and link it made. `jkit search jdk` shows every vendor and version you can install.
+
+4. **Check it.** `java` is on your `PATH` already:
+
+   ```console
+   $ java -version
+   openjdk version "21.0.13.1" 2026-11-17 LTS
+   OpenJDK Runtime Environment Temurin-21.0.13.1+2 (build 21.0.13.1+2-LTS)
+   OpenJDK 64-Bit Server VM Temurin-21.0.13.1+2 (build 21.0.13.1+2-LTS, mixed mode, sharing)
+   ```
+
+   Open a new window (or run `jkit reset jdk`) and `JAVA_HOME` is set too.
+
+5. **Install a second JDK and switch to it in this shell.** Here, Azul Zulu 17:
+
+   ```console
+   $ jkit install jdk@17 zulu
+   downloading jdk 17.0.21.1+2 zulu from cdn.azul.com
+   installed jdk 17.0.21.1+2 zulu → ~/.jkit/tools/jdk/17.0.21.1+2-zulu
+     folder ~/.jkit/tools/jdk/17.0.21.1+2-zulu created
+   make it the default: jkit use jdk@17 zulu --global
+   $ jkit use jdk@17 zulu
+   using jdk 17.0.21.1+2 zulu in this shell
+     set    JKIT_SHELL_JDK=~/.jkit/tools/jdk/17.0.21.1+2-zulu
+     set    JAVA_HOME=~/.jkit/tools/jdk/17.0.21.1+2-zulu
+     PATH   + ~/.jkit/tools/jdk/17.0.21.1+2-zulu/bin
+     only this shell; for new shells too: jkit use jdk@17.0.21.1+2 zulu --global
+   $ java -version
+   openjdk version "17.0.21.1" 2026-11-17 LTS
+   ```
+
+   Other windows still have Temurin 21. `jkit reset jdk` puts this one back.
+
+6. **Choose the global default.** `--global` sets the version for new shells, and for IDEs
+   pointed at `~/.jkit/global/jdk`:
+
+   ```console
+   $ jkit use jdk@21 --global
+   global jdk → 21.0.13.1+2 temurin
+     link   ~/.jkit/global/jdk → ~/.jkit/tools/jdk/21.0.13.1+2-temurin
+     new shells with the jkit hook: JAVA_HOME=~/.jkit/global/jdk, PATH includes ~/.jkit/global/jdk/bin
+     this shell keeps its own jdk (~/.jkit/tools/jdk/17.0.21.1+2-zulu); to follow the global one: jkit reset jdk
+   $ jkit reset jdk
+   reset jdk in this shell
+     unset  JKIT_SHELL_JDK
+     set    JAVA_HOME=~/.jkit/global/jdk
+     PATH   - ~/.jkit/tools/jdk/17.0.21.1+2-zulu/bin
+   ```
+
+7. **Pin a version in a project.** In the project's folder, `jkit pin` writes a `jkit.toml` to
+   commit with your code:
+
+   ```console
+   $ cd ~/src/app
+   $ jkit pin jdk@17 zulu
+   pinned jdk 17 zulu in ~/src/app/jkit.toml
+     file   ~/src/app/jkit.toml created
+     set    JAVA_HOME=~/.jkit/tools/jdk/17.0.21.1+2-zulu
+     PATH   + ~/.jkit/tools/jdk/17.0.21.1+2-zulu/bin
+   $ cat jkit.toml
+   # Versions jkit uses in this project: jkit sync installs them.
+   [tools]
+   jdk = { version = "17", vendor = "zulu" }
+   ```
+
+   With auto-switch on, every hooked shell now switches to Zulu 17 when it enters `~/src/app`, and
+   back to the global JDK when it leaves. A teammate who clones the project runs `jkit sync` to
+   install what it pins.
+
+8. **Ask jkit what's going on.** `jkit status` shows which version of each tool is active here,
+   and why; `jkit doctor` checks the whole setup:
+
+   ```console
+   $ jkit status
+   jdk      17.0.21.1+2 zulu        project   jkit.toml (jdk 17 zulu)
+   project: ~/src/app (jkit.toml)
+   $ jkit doctor
+   ok    jkit 0.4.0, linux-x64, home ~/.jkit
+   ok    shell hook loaded (bash)
+   ok    default vendors: temurin (jdk), graalvm-ce (graalvm)
+   ok    global links and this shell's choices point at existing installs
+   ok    no *_HOME variable set outside jkit
+   ok    2 installs, nothing left over
+   ok    project ~/src/app (jkit.toml): 1 pin, all installed
+   ok    active JDK runs: openjdk version "17.0.21.1" 2026-11-17 LTS (~/.jkit/tools/jdk/17.0.21.1+2-zulu)
+   no problems found
+   ```
+
+</Steps>
+
+<Aside type="tip">
+Which version wins, from highest to lowest: `jkit use` in this shell, then the project file, then
+the global default. `jkit status` always says which one applied.
+</Aside>
+
+## Next
+
+- Add Maven, Gradle or sbt: `jkit install maven`, then see [build tools](/guides/build-tools/).
+- Run one command with other versions, without switching: `jkit exec jdk@17 -- mvn test`. See
+  [scripts](/guides/scripts/) and [CI](/guides/ci/).
+- Keep JDKs current: `jkit upgrade` installs the newest build of each release you have. See
+  [keeping up to date](/guides/keeping-up-to-date/).
+- Unsure which vendor to pick? See [choosing a JDK](/guides/choosing-a-jdk/).
