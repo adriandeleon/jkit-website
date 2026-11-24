@@ -127,7 +127,7 @@ build's exit code. Things to watch:
 - **Builds.** `jdk = "21"` takes the newest 21 at the time CI installs it, so CI can move to a
   newer patch before a laptop does. Use an exact pin when that matters.
 - **Unchecked downloads.** `jkit sync` refuses a download whose source publishes no checksum,
-  unless you add `--allow-unverified`; a CI step stops there rather than installing unchecked
+  or whose publisher's signature jkit can't check, unless you add `--allow-unverified`; a CI step stops there rather than installing unchecked
   code.
 - **A missing pin is an error.** `jkit env` and `jkit exec` exit with code 3 when the project
   pins a version that isn't installed, so a step never runs with half an environment.

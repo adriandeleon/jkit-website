@@ -135,6 +135,16 @@ release, next to your file, and check:
 sha256sum --check --ignore-missing SHA256SUMS
 ```
 
+From 0.4.0, `SHA256SUMS.asc` next to it is the OpenPGP signature of `SHA256SUMS` by jkit's release
+key, `A944 4E8F 5048 FEBC B942 E110 FC89 EBE6 8C45 39E6`, which `jkit self-update` also checks.
+Import the public key,
+[`jkit-release.asc`](https://github.com/adriandeleon/jkit/blob/main/jkit-core/src/main/resources/dev/jkit/core/keys/jkit-release.asc)
+in jkit's repository, check its fingerprint matches, then:
+
+```bash
+gpg --verify SHA256SUMS.asc SHA256SUMS
+```
+
 To check where and how a file was built, each one also has a GitHub build provenance
 attestation, which the [GitHub CLI](https://cli.github.com) verifies:
 

@@ -22,14 +22,25 @@ Settings, disk space, self-updates and signature checks.
   installs, and cached version lists older than 30 days. `--dry-run` shows what would go and how
   much space it frees. [Reference](/reference/commands/prune/)
 - **`jkit self-update`** updates jkit itself. A jkit from a release archive is replaced in place
-  after checking the download against the release's `SHA256SUMS`; for Homebrew, apt, dnf and
-  winget it prints that tool's upgrade command. `--check` only says whether a newer jkit is out.
+  after checking the download against the release's `SHA256SUMS`, which must be signed by jkit's
+  release key (`SHA256SUMS.asc`, built into jkit); for Homebrew, apt, dnf and winget it prints
+  that tool's upgrade command. `--check` only says whether a newer jkit is out.
   [Reference](/reference/commands/self-update/)
 - **OpenPGP signature checks.** Temurin, Microsoft and Corretto JDKs, Maven 3.9.0 and later, and
   sbt are now checked against their publisher's signature, with keys built into jkit, on top of
-  the checksum. A signature that doesn't match stops the install. Corretto publishes no checksum,
-  so its signature is the check, and Corretto installs no longer need `--allow-unverified`.
+  the checksum. A signature that doesn't match stops the install. So does one jkit can't fetch,
+  read, or tie to the publisher's keys, unless you pass `--allow-unverified`, which installs on
+  the checksum alone, marked unverified. Expect that with a Maven release by a new Apache release
+  manager, until a jkit release adds their key. Corretto publishes no checksum, so its signature
+  is the check, and Corretto installs no longer need `--allow-unverified`.
   [Security](/reference/security/)
+- **`eval "$(jkit env)"` fails when `jkit env` does.** On failure it prints `false` on stdout
+  (`throw '…'` for PowerShell), so a `set -e` script or CI step stops there.
+  [Reference](/reference/commands/env/)
+- Smaller fixes: `jkit upgrade jdk zuluu` says `unknown JDK vendor` with a suggestion (exit 2)
+  instead of finding nothing to upgrade; `jkit config set jdk.vendor "SAP Machine"` accepts
+  foojay's other names for a vendor; `config set` and `config unset` can repair a `config.toml`
+  with a wrong value; `jkit prune` carries on past a build it can't remove.
 
 ## 0.3.0
 

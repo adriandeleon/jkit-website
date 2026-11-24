@@ -62,8 +62,9 @@ What changes:
 
 Each line is upgraded on its own. If one fails (a download error, a vendor with no build for
 your platform), the others still go ahead, and `jkit upgrade` exits 1 at the end. Downloads are
-checked as for `jkit install`; one with no published checksum is refused unless you add
-`--allow-unverified`.
+checked as for `jkit install`; one with no published checksum, or whose publisher's signature
+can't be checked (a Maven release by a new release manager, say), is refused unless you add
+`--allow-unverified`. A newer jkit may know the new key, so run `jkit self-update` first.
 
 `jkit install jdk@21` also installs the newest 21 build if you don't have it, but it doesn't move
 the global link: that's the difference from `jkit upgrade`.
@@ -103,6 +104,9 @@ It keeps:
 exact pin to a build it removed gets it back with `jkit sync` there (a download). Run
 `--dry-run` first if that matters.
 
+A build it can't remove (on Windows, one an IDE or a Gradle daemon holds open) is a warning, and
+the rest are still removed; `freed` counts only what was.
+
 To remove one particular build instead, use `jkit remove`:
 
 ```bash
@@ -125,7 +129,8 @@ What it does depends on how you installed jkit:
 | Installed with | `jkit self-update` |
 |---|---|
 | Homebrew | prints `brew upgrade jkit` |
-| apt (the Vitrina repository or a `.deb`) | prints `sudo apt update && sudo apt install --only-upgrade jkit` |
+| apt (the Vitrina repository) | prints `sudo apt update && sudo apt install --only-upgrade jkit` |
+| a `.deb` installed from a file | prints a `curl` command that downloads the new release's `.deb`, and `sudo apt install` for it |
 | dnf (an `.rpm`) | prints the `sudo dnf install` command for the new release's `.rpm` |
 | winget | prints `winget upgrade AdrianDeLeon.jkit` |
 | a `.tar.gz` or `.zip` from the releases | replaces the binary in place |
@@ -133,8 +138,9 @@ What it does depends on how you installed jkit:
 For a package manager, it only prints the command, because replacing a file that a package
 manager owns would confuse it. Run the command it prints.
 
-For a binary from a release archive, it downloads the archive for your platform, checks it against
-the release's `SHA256SUMS`, checks that the new binary runs (`jkit --version`), and only then
+First it checks that the release's `SHA256SUMS` is signed by jkit's release key, which is built
+into jkit; a release without a good signature is refused. For a binary from a release archive, it
+then downloads the archive for your platform, checks it against that `SHA256SUMS`, checks that the new binary runs (`jkit --version`), and only then
 replaces the old one. If any step fails, nothing changes. It needs write access to the folder jkit
 is in: run it as the user who owns that folder, or move jkit to a folder on `PATH` that you own.
 On Windows the old binary is kept as `jkit.exe.old` until the next `self-update` deletes it.

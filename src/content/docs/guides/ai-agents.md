@@ -87,8 +87,8 @@ versions; prefix commands with `jkit exec` instead:
   only if the user is fine with that.
 - Don't change the global default (`jkit use … --global`) or remove installs unless asked. Note
   that the first install of a tool becomes its default; add `--no-default` to avoid that.
-- jkit refuses downloads with no published checksum. Don't add `--allow-unverified` unless the user
-  says so.
+- jkit refuses downloads with no published checksum, or whose publisher's signature it can't
+  check. Don't add `--allow-unverified` unless the user says so.
 - On failure, read the `error:` line and the hints under it on stderr (`--json`: `error.hints`).
 ```
 
@@ -132,7 +132,7 @@ also `jkit exec`. If your agent supports it, allow specific forms such as `jkit 
 :::
 
 Never let an agent add `--allow-unverified` on its own: it installs a download that has no
-checksum anyone could check. And keep the global default yours: an agent that needs JDK 17 for
+checksum, or whose signature jkit couldn't check. And keep the global default yours: an agent that needs JDK 17 for
 one command should use `jkit exec jdk@17 -- …`, not `jkit use jdk@17 --global`.
 
 ## Giving the agent the docs

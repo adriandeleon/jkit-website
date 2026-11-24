@@ -36,8 +36,9 @@ Without the hook it only installs, and says the shell is unchanged; then use
 `jkit sync` never changes the global defaults, and installs from it never become the default:
 unlike `jkit install`, the first install of a tool by `sync` doesn't set its global link.
 
-A download with no published checksum is refused unless you pass `--allow-unverified`, so cloning
-a repository can't make jkit install something unchecked. If one pin fails, what the earlier pins
+A download with no published checksum, or whose publisher's signature can't be checked, is
+refused unless you pass `--allow-unverified`, so cloning a repository can't make jkit install
+something unchecked. If one pin fails, what the earlier pins
 installed stays installed, and the error says so.
 
 With auto-switch on, the `cd` hook switches to installed pins by itself; `jkit sync` is still what
@@ -48,7 +49,7 @@ installs missing ones.
 | Option | Description |
 | --- | --- |
 | `--dry-run` | Only list what would be installed; install nothing and don't change the shell. |
-| `--allow-unverified` | Install pins even when the source publishes no checksum for the download. |
+| `--allow-unverified` | Install pins even when a download has no published checksum, or its publisher's signature can't be checked. |
 | `--offline` | Never contact the network; use cached version lists only. Missing pins then fail. |
 | `--refresh` | Fetch version lists again instead of using the cache. |
 | `--json` | Print one JSON document on stdout instead of text. |

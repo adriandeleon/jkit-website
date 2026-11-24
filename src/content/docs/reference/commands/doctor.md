@@ -50,7 +50,7 @@ counts warnings and problems, or says `no problems found`.
 
 | Option | Description |
 | --- | --- |
-| `--network` | Also check that foojay, services.gradle.org, Maven Central and GitHub can be reached. |
+| `--network` | Also check that foojay, services.gradle.org, Maven Central and GitHub (sbt) can be reached. |
 | `--json` | Print one JSON document on stdout instead of text. |
 | `-h`, `--help` | Show help and exit. |
 | `-V`, `--version` | Print jkit's version and exit. |

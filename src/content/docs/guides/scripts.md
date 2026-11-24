@@ -46,15 +46,13 @@ these codes:
 ```bash
 #!/usr/bin/env bash
 set -euo pipefail
-env_script=$(jkit env)          # this folder's project versions, else the global ones
-eval "$env_script"
+eval "$(jkit env)"              # this folder's project versions, else the global ones
 java -version
 mvn -B verify
 ```
 
-The two-step form matters: `eval "$(jkit env)"` on one line doesn't stop a `set -e` script when
-`jkit env` fails, because `eval` of an empty string succeeds. An assignment does carry the exit
-code.
+When `jkit env` fails it prints `false` on stdout, so the `eval` fails too and `set -e` stops the
+script there.
 
 `jkit env` prints `export` lines for bash and zsh. For other shells, ask for their syntax:
 
@@ -64,8 +62,8 @@ jkit env --shell pwsh | Out-String | Invoke-Expression   # PowerShell
 ```
 
 `--dir <path>` reads the project file from another folder, and `--no-project` ignores project
-files. A pin that isn't installed makes `jkit env` exit `3` and print nothing on stdout, with
-the `jkit install` command to run on stderr.
+files. A pin that isn't installed makes `jkit env` exit `3` and print only `false` on stdout
+(`throw '…'` for PowerShell), with the `jkit install` command to run on stderr.
 
 ## Makefiles
 

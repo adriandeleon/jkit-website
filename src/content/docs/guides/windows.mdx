@@ -168,7 +168,7 @@ jkit self-update
 
 A jkit from winget is left to winget, and `self-update` prints the command:
 `winget upgrade AdrianDeLeon.jkit`. A jkit from the `.zip` is replaced in place after checking the
-download against the release's `SHA256SUMS`. Windows can't replace a running `.exe`, so the old
+download against the release's `SHA256SUMS`, signed by jkit's release key. Windows can't replace a running `.exe`, so the old
 one is renamed to `jkit.exe.old` and deleted by the next `self-update`.
 
 ## Windows on ARM

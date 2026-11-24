@@ -25,9 +25,10 @@ jkit install [-hV] [--allow-unverified] [--fx] [--json] [--no-default]
 2. **Stops if it's already installed**, saying so (exit code 0).
 3. **Downloads it** over HTTPS, with a progress bar when attached to a terminal.
 4. **Checks it** against the checksum its source publishes and, for Temurin, Microsoft, Corretto,
-   Maven 3.9.0+ and sbt, the publisher's OpenPGP signature. A download with no checksum is
-   refused unless you pass `--allow-unverified` (Corretto's signature stands in for its missing
-   checksum). See [Security](/reference/security/).
+   Maven 3.9.0+ and sbt, the publisher's OpenPGP signature. A download with no checksum, or a
+   signature that is missing or isn't by the publisher's key, is refused unless you pass
+   `--allow-unverified` (Corretto's signature stands in for its missing checksum). A signature
+   that doesn't match always stops it. See [Security](/reference/security/).
 5. **Unpacks and checks the archive** in `~/.jkit/tmp/`, then moves it into
    `~/.jkit/tools/<tool>/<version>[-<vendor>]` in one step.
 6. **Makes it the default** if it's the first install of that tool: it points
@@ -49,7 +50,7 @@ If two jkit processes install at once, the second waits for the first.
 | --- | --- |
 | `<tool>[@version]` | `jdk`, `graalvm`, `maven`, `gradle` or `sbt`; `@21`, `@21.0.5`, `@lts` or `@latest` (the default). |
 | `<vendor>` | A JDK vendor, such as `temurin`, `zulu`, `corretto` (see `jkit search jdk`). JDK and GraalVM only. |
-| `--allow-unverified` | Install even when the source publishes no checksum for the download (or, for Corretto, when its signature can't be checked). |
+| `--allow-unverified` | Install even when the download has no published checksum, or its publisher's signature can't be checked (it can't be fetched or read, or isn't by a key jkit has). The install is marked unverified and says why. A signature that doesn't match still stops it. |
 | `--fx` | A JavaFX build. |
 | `--no-default` | Don't make it the default, even when it's the first of its tool. |
 | `--pre` | Allow pre-releases. |
@@ -126,7 +127,7 @@ error: microsoft has no build matching jdk@8 for linux-x64
 | Code | When |
 | --- | --- |
 | `0` | Installed, or already installed. |
-| `1` | No matching build, a download or check failed, a download with no checksum without `--allow-unverified`, or `--offline` when it needs to download. |
+| `1` | No matching build, a download or check failed, a download with no checksum or a signature jkit can't check without `--allow-unverified`, or `--offline` when it needs to download. |
 | `2` | Unknown tool or vendor, a version that isn't one, a vendor on Maven, Gradle or sbt, or a non-GraalVM vendor for `graalvm`. |
 
 ## JSON

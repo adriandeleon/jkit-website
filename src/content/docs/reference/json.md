@@ -106,7 +106,8 @@ the same way:
   into jkit: `"Adoptium"` for Temurin, `"Microsoft"` for Microsoft builds, `"Amazon"` for Corretto,
   `"Apache Maven"` for Maven 3.9.0 and later (the install's `notes` name the release manager), and
   `"sbt"` for sbt. That does say who built it. Null for other vendors, Gradle and older Maven
-  releases, when the signature couldn't be fetched or checked (the install's `notes` say why), and
+  releases, when the signature couldn't be fetched or checked (an `--allow-unverified` install;
+  its `notes` say why), and
   for installs made before jkit checked signatures.
 
 ## Changes
@@ -457,7 +458,7 @@ when it didn't, or when the line was one jkit couldn't use (it is removed anyway
 `jkit config [list] --json`.
 
 ```json
-{ "schemaVersion": 1, "file": "/home/me/.jkit/config.toml",
+{ "schemaVersion": 1, "file": "/home/me/.jkit/config.toml", "error": null,
   "settings": [
     { "key": "jdk.vendor", "value": "zulu", "source": "file", "file": "zulu", "env": null,
       "envVariable": "JKIT_JDK_VENDOR", "default": "temurin",
@@ -468,6 +469,8 @@ when it didn't, or when the line was one jkit couldn't use (it is removed anyway
 - `value` is what jkit uses; `source` says where it came from: `env` (the variable named by
   `envVariable`, which wins), `file` (config.toml) or `default`.
 - `file` and `env` are the raw values each place holds, null where unset.
+- `error` says why config.toml can't be used (a wrong type, say), or is null. While it is set, the
+  file's values don't apply, so their `source` is `default`.
 - Keys: `jdk.vendor`, `graalvm.vendor`, `shell.auto_switch` (`value` `"true"` or `"false"`).
 
 `jkit config get <key> --json` prints one of those objects as the document. `jkit config set <key>

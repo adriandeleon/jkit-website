@@ -47,14 +47,19 @@ Writes the value to `config.toml`, keeping the file's comments and the order of 
 creates the file, and `~/.jkit`, if needed. Then it says when the change takes effect.
 
 - `jdk.vendor` is checked against foojay's vendor list (which may go online), and written as jkit's
-  name for it: `jkit config set jdk.vendor sap_machine` writes `sapmachine`. An unknown vendor is
-  refused with a suggestion. If foojay can't be reached, the value is written anyway, with a note.
+  name for it: `jkit config set jdk.vendor sap_machine` and
+  `jkit config set jdk.vendor "SAP Machine"` both write `sapmachine`. An unknown vendor is refused
+  with a suggestion. If foojay can't be reached, a plain name is written anyway, with a note; one
+  that only foojay can make sense of (with a space, say) is refused.
 - `graalvm.vendor` must be GraalVM-based.
 - `shell.auto_switch` takes `true`/`false`, and also `1`/`0`, `yes`/`no`, `on`/`off`; it is written
   as `true` or `false`.
 
 Setting a value the file already has changes nothing and says so. If the environment variable for
 that key is set, jkit warns that it wins over the file.
+
+`set` and `unset` work on a `config.toml` that holds a wrong value (`auto_switch = "yes"`, say),
+so they can repair it; a file that isn't TOML at all is still refused.
 
 Changing `jdk.vendor` never changes installed JDKs or your global default; it changes what
 `jdk@…` means from now on. Changing `shell.auto_switch` takes effect in new shells.
@@ -122,7 +127,9 @@ error: shell.auto_switch must be true or false, not 'maybe'
 ## JSON
 
 `--json` prints one object per setting: `key`, `value`, `source` (`env`, `file` or `default`), the
-raw `file` and `env` values, `envVariable`, `default` and `description`. `set` and `unset` add
+raw `file` and `env` values, `envVariable`, `default` and `description`. `error` says why
+`config.toml` can't be used, or is null; while it is set, the file's values don't apply, so their
+`source` is `default`. `set` and `unset` add
 `changed`, `changes` and `notes`. See [`jkit config` in JSON output](/reference/json/#jkit-config).
 
 ## See also

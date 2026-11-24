@@ -37,8 +37,8 @@ already there).
 Anything that isn't a bad argument or a missing install, for example:
 
 - A download failed, or a source couldn't be reached and nothing cached could stand in.
-- A download didn't match its checksum or signature, or has no checksum and you didn't pass
-  `--allow-unverified`.
+- A download didn't match its checksum or signature, or has no checksum or a signature jkit can't
+  check, and you didn't pass `--allow-unverified`.
 - The vendor has no build matching the version for your platform.
 - `jkit remove` refused because the build is global or chosen in this shell (without `--force`),
   or the version matches several builds (without `--all`).

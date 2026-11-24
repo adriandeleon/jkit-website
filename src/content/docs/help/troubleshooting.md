@@ -342,7 +342,9 @@ Related warnings that don't stop the install:
   Old Maven releases have only SHA-1.
 - For Corretto, which publishes no checksum, jkit checks Amazon's signature instead and says
   `note: ... has no published checksum; checking Amazon's signature instead`. If the signature
-  can't be fetched or checked, the install is refused the same way.
+  can't be fetched or checked, the install is refused the same way. A signed Corretto build must
+  also unpack to the JDK version jkit asked for, or it is refused with
+  `the download for ... is signed, but it is JDK <version>; nothing was installed`.
 
 See [security](/reference/security/).
 
@@ -358,19 +360,37 @@ publisher's OpenPGP signature with keys built into jkit. A signature by the righ
 match the file means the download was changed or broken. Nothing was installed. Try again once;
 if it repeats, pick another build or vendor, and consider [reporting it](/help/getting-help/).
 
-A different message is a warning, not an error:
-
-```text
-warning: couldn't check the signature of maven <version>: <detail>; installed with only its checksum checked (a newer jkit may know a new key)
-```
-
-Each Maven release is signed by whichever Apache release manager made it, so a release by someone
-new gets this warning until a jkit release adds their key. A Maven mirror that doesn't serve the
-`.asc` files gives it too. The checksum was still checked. `jkit self-update` brings the newest
-keys.
-
 `checksum mismatch for ...` followed by `expected` and `actual` lines means the file didn't match
 its published checksum; treat it the same way as a bad signature.
+
+## Signature missing or by an unknown key
+
+```text
+error: couldn't check the signature of maven <version>: made with key <key id>, not Apache Maven's 4 keys (a newer jkit may know a new key: jkit self-update); nothing was installed
+  install it anyway: jkit install maven@<version> --allow-unverified
+  or pick another version or vendor
+```
+
+When a publisher signs its downloads (Temurin and Microsoft when foojay lists a signature,
+Corretto, Maven 3.9.0 and later, sbt), jkit needs a good signature, not only the checksum: the
+checksum usually comes from the same server as the download, so whoever can replace one can
+replace both. A signature jkit can't fetch (`couldn't fetch the signature of ...`), can't read
+(not an OpenPGP signature, or a weak hash), or can't tie to the publisher's built-in keys refuses
+the install. `jkit sync` and `jkit upgrade` stop the same way.
+
+Expect it most with Maven. Each Maven release is signed by whichever Apache release manager made
+it, so a release by someone new is refused until a jkit release adds their key. A Maven mirror
+(`JKIT_SOURCES_MAVEN_URL`) that doesn't serve the `.asc` files is refused too. Your choices:
+
+- `jkit self-update`, then try again: a newer jkit may know the key.
+- Install an earlier release (`jkit install maven@3.9.11`), or ask your mirror's admins to serve the
+  `.asc` files.
+- If you trust the source, rerun with `--allow-unverified`, as the hint shows. It installs on the
+  checksum alone, marked unverified, and says why:
+
+  ```text
+  warning: couldn't check the signature of maven <version>: <detail> (a newer jkit may know a new key: jkit self-update); installed with only its checksum checked
+  ```
 
 ## Behind a proxy, or offline
 

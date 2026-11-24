@@ -107,8 +107,7 @@ directly, write the project's environment to `$GITHUB_ENV` and `$GITHUB_PATH` on
       - run: mvn -B verify
 ```
 
-Within a single step, `env_script=$(jkit env)` followed by `eval "$env_script"` does the same
-for the rest of that step's script.
+Within a single step, `eval "$(jkit env)"` does the same for the rest of that step's script.
 
 </TabItem>
 <TabItem label="GitLab CI">
@@ -188,13 +187,12 @@ Or load the project's environment into the script once and call tools directly:
 
 ```bash
 jkit sync
-env_script=$(jkit env)          # exits 3 if a pin isn't installed; set -e stops here
-eval "$env_script"              # JAVA_HOME, MAVEN_HOME, … and PATH for the rest of the script
+eval "$(jkit env)"              # JAVA_HOME, MAVEN_HOME, … and PATH for the rest of the script
 mvn -B verify
 ```
 
-Keep the two lines apart: `eval "$(jkit env)"` on one line hides a failure of `jkit env` from
-`set -e`.
+If a pin isn't installed, `jkit env` fails and prints `false` for `eval` to run, so `set -e` stops
+the script there.
 
 </TabItem>
 </Tabs>
@@ -218,14 +216,19 @@ an environment, so a forgotten `jkit sync` fails loudly.
 ## Checksums and unverified downloads
 
 `jkit sync` refuses a download whose source publishes no checksum (and no signature jkit can
-check). Check before a real run:
+check). It also refuses one whose publisher signs it when the signature can't be fetched or isn't
+by a key jkit has: a Maven release by a new Apache release manager, until a jkit release adds
+their key, or a Maven mirror that doesn't serve the `.asc` files. Check for missing checksums
+before a real run:
 
 ```bash
 jkit sync --dry-run --json | jq -r '.tools[] | "\(.tool) \(.status)"'
 ```
 
-A tool with status `would-refuse` needs `--allow-unverified`. Think twice before adding that flag
-to CI; it's usually better to pin a vendor that publishes checksums. See
+A tool with status `would-refuse` needs `--allow-unverified`. A dry run doesn't fetch signatures,
+so it can't predict a signature refusal. Think twice before adding that flag to CI; it's usually
+better to pin a vendor that publishes checksums, or a Maven release jkit can check, and to keep
+jkit itself up to date. See
 [security](/reference/security/).
 
 ## `jkit doctor` as a gate

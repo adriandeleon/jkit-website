@@ -65,7 +65,8 @@ tool (`maven@3.9`, `gradle@8.14`), and `@lts` and `@latest` work too. jkit still
 So the same command works the same way in a terminal, a script, CI and an AI agent. No command
 prompts or reads from the keyboard. Instead, jkit prints every change it makes (folders created,
 links set, variables changed), and the risky ones need a flag: `--force` to remove a default,
-`--allow-unverified` to install a download with no checksum. Commands that change a lot have
+`--allow-unverified` to install a download with no checksum, or one whose publisher's signature
+can't be checked. Commands that change a lot have
 `--dry-run`.
 
 ## Choosing a JDK
@@ -174,8 +175,9 @@ failure, and exit codes are stable (`3` means the version isn't installed). See
 Downloads come over HTTPS only and are checked against the checksum their source publishes
 (SHA-256 or stronger counts as verified). A download with no checksum is refused unless you pass
 `--allow-unverified`. Temurin, Microsoft and Corretto JDKs, Maven 3.9.0 and later, and sbt are
-also checked against their publisher's OpenPGP signature, with keys built into jkit. See
-[security](/reference/security/).
+also checked against their publisher's OpenPGP signature, with keys built into jkit. A signature
+that doesn't match stops the install; one that is missing or isn't by the publisher's key stops
+it too, unless you pass `--allow-unverified`. See [security](/reference/security/).
 
 ### Does jkit phone home or collect telemetry?
 
@@ -199,7 +201,8 @@ or a mirror you point jkit at. See [corporate networks](/guides/corporate-networ
 ### How do I update jkit?
 
 `jkit self-update`. For a jkit installed from a `.tar.gz` or `.zip`, it replaces the binary after
-checking the download against the release's `SHA256SUMS`. For Homebrew, apt, dnf and winget it
+checking the download against the release's `SHA256SUMS`, which must be signed by jkit's release
+key. For Homebrew, apt, dnf and winget it
 prints that tool's upgrade command instead. `jkit self-update --check` only says whether a newer
 release is out.
 

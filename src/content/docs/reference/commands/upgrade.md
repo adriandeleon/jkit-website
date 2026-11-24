@@ -41,7 +41,7 @@ Things it doesn't do:
 - **Touch pre-releases**, unless you pass `--pre`: an installed early-access build has no stable
   build to move to.
 
-A line that fails (a download error, a missing checksum) is reported and the others still run;
+A line that fails (a download error, a missing checksum, a signature jkit can't check) is reported and the others still run;
 the exit code is then 1.
 
 ## Options
@@ -51,7 +51,7 @@ the exit code is then 1.
 | `[tool[@major]]` | Only this tool, and with `@major` only that major version. Default: everything. `jdk@lts` means the newest installed LTS release. |
 | `<vendor>` | Only that vendor's JDK lines. |
 | `-n`, `--dry-run` | Show what would be upgraded; install nothing. |
-| `--allow-unverified` | Install upgrades even when the source publishes no checksum for the download. |
+| `--allow-unverified` | Install upgrades even when a download has no published checksum, or its publisher's signature can't be checked. |
 | `--fx` | Treat JDKs as JavaFX builds. Only needed for installs made before jkit recorded JavaFX. |
 | `--pre` | Allow pre-releases. |
 | `--offline` | Never contact the network; use cached version lists only. Useful with `--dry-run`. |
@@ -94,7 +94,15 @@ jkit upgrade jdk@21 zulu      # only Zulu 21
 jkit upgrade && jkit prune    # upgrade, then remove the superseded builds
 ```
 
-With nothing installed, it says `nothing installed yet · try: jkit search jdk`.
+With nothing installed, it says `nothing installed yet · try: jkit search jdk`. A vendor name
+jkit doesn't know is an error, with a suggestion, rather than nothing to upgrade:
+
+```console
+$ jkit upgrade jdk zuluu
+error: unknown JDK vendor 'zuluu'
+  did you mean: zulu?
+  vendors: …
+```
 
 ## Exit codes
 
@@ -102,7 +110,7 @@ With nothing installed, it says `nothing installed yet · try: jkit search jdk`.
 | --- | --- |
 | `0` | Every line is up to date, was upgraded, or (dry run) can be. |
 | `1` | At least one line failed; the others still ran. |
-| `2` | Unknown tool, a version that isn't one, or a vendor on Maven, Gradle or sbt. |
+| `2` | Unknown tool or vendor, a version that isn't one, or a vendor on Maven, Gradle or sbt. |
 | `3` | `jdk@lts` with no LTS release installed. |
 
 ## JSON

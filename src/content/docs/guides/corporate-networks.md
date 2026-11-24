@@ -102,8 +102,9 @@ jkit install maven@3.9
   rewrite those links to internal https addresses if downloads have to stay inside your network.
 - **Checksums and signatures still apply.** jkit checks every download against the checksum its
   source publishes. Maven 3.9.0 and later and sbt are also checked against their publisher's
-  signature: a mirror that doesn't serve the `.asc` files gives a warning that only the checksum
-  was checked. A Maven mirror with only `.md5` files counts as having no checksum, and the install is
+  signature, which must be there: a Maven mirror (`JKIT_SOURCES_MAVEN_URL`) that doesn't serve the
+  `.asc` files next to the zips is refused, unless you pass `--allow-unverified`, which installs
+  on the checksum alone, marked unverified. A Maven mirror with only `.md5` files counts as having no checksum, and the install is
   refused unless you pass `--allow-unverified`. See [security](/reference/security/).
 
 ## Offline use

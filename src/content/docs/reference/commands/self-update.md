@@ -18,19 +18,22 @@ jkit self-update [-hV] [--check] [--json]
 
 1. **Finds the newest release** by reading the `SHA256SUMS` file of the latest release on GitHub
    (always fetched fresh). Pre-releases are on the releases page only, never offered here.
-2. **Works out how this jkit was installed**, from where the binary is:
+2. **Checks `SHA256SUMS` is signed by jkit's release key**, built into jkit, using the release's
+   `SHA256SUMS.asc`. A release without a good signature is refused, and nothing changes.
+3. **Works out how this jkit was installed**, from where the binary is:
 
    | Installed with | How jkit tells | Update |
    | --- | --- | --- |
    | Homebrew | the binary is in a `Cellar/jkit/` folder (or under `.linuxbrew`) | `brew upgrade jkit` |
-   | apt (`.deb`) | `/usr/bin/jkit`, and dpkg lists the `jkit` package | `sudo apt update && sudo apt install --only-upgrade jkit` |
+   | apt (`.deb`) | `/usr/bin/jkit`, dpkg lists the `jkit` package, and the Vitrina apt repository is set up | `sudo apt update && sudo apt install --only-upgrade jkit` |
+   | a `.deb` installed from a file | `/usr/bin/jkit`, dpkg lists the `jkit` package, no Vitrina repository | `curl -fLo /tmp/<file> <the new release's .deb URL> && sudo apt install /tmp/<file>` |
    | dnf (`.rpm`) | `/usr/bin/jkit` on a system with an rpm database | `sudo dnf install <the new release's .rpm URL>` |
    | winget | the binary is in winget's `Packages` folder | `winget upgrade AdrianDeLeon.jkit` |
    | a release archive | anything else | jkit replaces itself |
 
-3. **If it's already the newest**, it says so.
-4. **For a package manager's copy**, it prints the command above and changes nothing.
-5. **For a copy from a release archive**, it:
+4. **If it's already the newest**, it says so.
+5. **For a package manager's copy**, it prints the command above and changes nothing.
+6. **For a copy from a release archive**, it:
    1. downloads the `.tar.gz` (`.zip` on Windows) for your platform into `~/.jkit/tmp/`;
    2. checks it against the release's `SHA256SUMS`;
    3. unpacks it and runs the new binary's `jkit --version`, which must report the new version;
@@ -40,8 +43,10 @@ jkit self-update [-hV] [--check] [--json]
    If any step fails, the old binary is untouched. Windows can't replace a running `jkit.exe`, so
    there the old one is renamed to `jkit.exe.old`, which the next self-update deletes.
 
-`SHA256SUMS` comes from the same place as the archive, so the check catches a broken or altered
-download, not a compromised release. To check a release's build provenance by hand, see
+`SHA256SUMS` comes from the same place as the archive, so on its own it would catch a broken or
+altered download, not a compromised release. Its signature covers that: someone who could replace
+the files on the releases page couldn't sign them. Releases before 0.4.0 have no
+`SHA256SUMS.asc`. To check a release by hand, see
 [Verifying a jkit release](/reference/security/#verifying-a-jkit-release).
 
 You need write access to the folder holding jkit. There is no jkit build for musl Linux (Alpine).
@@ -71,6 +76,7 @@ What you see:
 | Case | Output |
 | --- | --- |
 | Up to date | `jkit 0.4.0 is the newest release` |
+| Ahead of the newest release (a pre-release or development build) | `jkit 0.5.0-rc.1 is up to date: the newest release is 0.4.0` |
 | `--check`, newer out | `jkit 0.4.1 is out (this is 0.4.0)`, then the command that updates it |
 | Package manager | `jkit 0.4.1 is out (this is 0.4.0); jkit came from Homebrew, so update it there:` and the command |
 | Release archive | `updated jkit 0.4.0 → 0.4.1 at ~/.local/bin/jkit`, and the file changed |
@@ -80,7 +86,7 @@ What you see:
 | Code | When |
 | --- | --- |
 | `0` | Up to date, updated, or (package manager, `--check`) told you how. |
-| `1` | GitHub couldn't be reached, the download failed its checksum, the new binary didn't run, the folder isn't writable, no build for this platform, or jkit runs on a JVM. |
+| `1` | GitHub couldn't be reached, `SHA256SUMS` isn't signed by jkit's release key, the download failed its checksum, the new binary didn't run, the folder isn't writable, no build for this platform, or jkit runs on a JVM. |
 
 ## JSON
 

@@ -20,7 +20,8 @@ It removes three kinds of things:
 
 1. **Superseded builds:** older builds in a release line once a newer stable one is installed
    (21.0.5 once 21.0.9 is in). A release line is a tool, its major version, and for JDKs the vendor
-   and whether it's a JavaFX build, as `jkit upgrade` groups them. It keeps a build that:
+   and whether it's a JavaFX build, as `jkit upgrade` groups them. For Maven, Gradle and sbt the
+   major version is the first number, so Maven 3.8.8 goes once 3.9.11 is in. It keeps a build that:
    - a global link points at,
    - this shell chose with `jkit use`, or applied from a project file,
    - the project file here pins.
@@ -35,7 +36,10 @@ It only knows about the project file in the current folder. A project elsewhere 
 exact old build gets it back with `jkit sync`.
 
 Removing builds works like [`jkit remove`](/reference/commands/remove/), with the same locks, and
-prints each one. At the end it says how much space it freed. It never uses the network.
+prints each one. What to keep is decided again once it holds the locks, so a `jkit use --global`
+made meanwhile is respected. A build it can't remove (on Windows, one an IDE or a Gradle daemon
+holds open) is a warning, and it carries on with the rest. At the end it says how much space it
+freed, counting only what it removed. It never uses the network.
 
 ## Options
 
@@ -75,13 +79,13 @@ jkit upgrade && jkit prune
 
 | Code | When |
 | --- | --- |
-| `0` | Pruned, or nothing to prune. A folder it couldn't delete is a warning, not a failure. |
-| `1` | A build couldn't be removed, or jkit can't run at all (an unsafe jkit home). |
+| `0` | Pruned, or nothing to prune. A build or folder it couldn't remove is a warning, not a failure. |
+| `1` | Something stops it altogether, such as an unsafe jkit home. |
 
 ## JSON
 
 `--json` prints the `builds` removed (each with the `newer` build that replaces it and its size),
-`leftovers`, `cache`, the total `bytes`, `changes` and `notes`. See
+`leftovers`, `cache`, the `bytes` freed, `changes` and `notes`. See
 [`jkit prune` in JSON output](/reference/json/#jkit-prune).
 
 ## See also

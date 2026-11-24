@@ -46,6 +46,10 @@ A project pin with no matching install is an error (exit code 3), with the comma
 it, so a CI step never runs with half an environment. Add `--no-project` to ignore the project
 file. A global link whose install is gone is skipped with a warning.
 
+On any failure jkit env also prints `false` on stdout (`throw '…'` for `pwsh` and `powershell`),
+so `eval "$(jkit env)"` fails too and a `set -e` script stops there. With `--json` the error is in
+the JSON document instead.
+
 With nothing to set (no project file, no global versions), it prints nothing on stdout and says so
 on stderr.
 
@@ -104,6 +108,7 @@ A pin that isn't installed:
 
 ```console
 $ jkit env
+false
 error: jkit.toml wants jdk 25, not installed
   install it: jkit install jdk@25
   or ignore the project file: jkit env --no-project

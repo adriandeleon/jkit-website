@@ -33,13 +33,18 @@ Where they come from, and how they're checked:
 
 | Tool | Source | Check |
 |---|---|---|
-| Maven | Maven Central (`apache-maven-<version>-bin.zip`) | its checksum; from 3.9.0, also the release manager's OpenPGP signature. Very old releases with only a SHA-1 checksum install with a warning, marked unverified. |
+| Maven | Maven Central (`apache-maven-<version>-bin.zip`) | its checksum; from 3.9.0, also the release manager's OpenPGP signature, which must be good. Very old releases with only a SHA-1 checksum install with a warning, marked unverified. |
 | Gradle | services.gradle.org | its SHA-256 checksum. Gradle publishes no signatures. |
 | sbt | sbt's GitHub releases (versions listed from Maven Central); 1.3.0 and later | its checksum and OpenPGP signature |
 
 Release candidates and milestones are hidden unless you add `--pre` (`jkit search maven --pre`,
 `jkit install maven@4 --pre`). An exact pre-release version (`maven@4.0.0-rc-4`, say) asks for it
 by itself. See [Security](/reference/security/) for how downloads are checked.
+
+Each Maven release is signed by whichever Apache release manager cut it, and jkit has the keys of
+the ones who signed 3.9.0 and later. A release by someone new is refused until a jkit release adds
+their key: `jkit self-update`, then try again. `--allow-unverified` installs it on the checksum
+alone, marked unverified. See [Troubleshooting](/help/troubleshooting/#signature-missing-or-by-an-unknown-key).
 
 ## Projects with a wrapper
 
