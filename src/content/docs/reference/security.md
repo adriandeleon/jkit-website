@@ -100,7 +100,8 @@ What happens in each case:
 - **Corretto** publishes no per-version checksum (foojay lists none, and corretto.aws has only one
   for the latest build), so for Corretto the signature is the check: a good signature by Amazon's
   key installs it, counted as verified. Amazon's signature covers the file, not its name, so jkit
-  also checks that the unpacked JDK's `release` file reports the version it asked for.
+  also checks that the unpacked JDK's `release` file (`version.txt` for Corretto 8, which has no
+  `release` file) reports the version it asked for.
 
 Not checked:
 

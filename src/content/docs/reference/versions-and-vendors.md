@@ -124,10 +124,10 @@ Each vendor numbers its builds its own way, and jkit uses the version as the ven
 
 ```console
 $ jkit search jdk@21
-bisheng          21.0.12+15
+bisheng          21.0.12+15  ○ no checksum
 corretto         21.0.13.1+2
-dragonwell       21.0.13.1
-gluon-graalvm    21.1
+dragonwell       21.0.13.1  ○ no checksum
+gluon-graalvm    21.1  ○ no checksum
 graalvm          21.0.12
 graalvm-ce       21.0.2
 jetbrains        21.0.11+1163125
@@ -137,7 +137,7 @@ liberica-nik     21.0.13+6
 mandrel          21
 microsoft        21.0.13.1
 openjdk          21.0.2+13
-openlogic        21.0.12+8
+openlogic        21.0.12+8  ○ no checksum
 oracle           21.0.12.1
 sapmachine       21.0.13.1
 semeru           21.0.13
@@ -145,6 +145,7 @@ semeru-certified 21.0.13+1
 temurin *        21.0.13.1+2
 zulu             21.0.13.1+2
 * default vendor   ● installed   · all builds of one vendor: jkit search jdk@21 <vendor>
+○ no published checksum: install refuses it unless --allow-unverified
 ```
 
 What to expect:

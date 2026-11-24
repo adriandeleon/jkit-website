@@ -46,7 +46,8 @@ jkit self-update [-hV] [--check] [--json]
 `SHA256SUMS` comes from the same place as the archive, so on its own it would catch a broken or
 altered download, not a compromised release. Its signature covers that: someone who could replace
 the files on the releases page couldn't sign them. Releases before 0.4.0 have no
-`SHA256SUMS.asc`. To check a release by hand, see
+`SHA256SUMS.asc`. Only replacing the binary needs the signature: `--check`, and the upgrade
+command printed for Homebrew, apt, dnf and winget, download nothing. To check a release by hand, see
 [Verifying a jkit release](/reference/security/#verifying-a-jkit-release).
 
 You need write access to the folder holding jkit. There is no jkit build for musl Linux (Alpine).
