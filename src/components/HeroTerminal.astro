@@ -1,0 +1,17 @@
+---
+// The example session on the home page, from a real run (paths shortened to ~).
+// Kept out of the MDX page so Markdown doesn't read the ~ pairs as strikethrough.
+---
+
+<pre class="term" aria-label="Example terminal session"><span class="p">$ </span><span class="c">jkit install jdk@21</span>
+downloading jdk 21.0.13.1+2 temurin from github.com
+installed jdk 21.0.13.1+2 temurin → ~/.jkit/tools/jdk/21.0.13.1+2-temurin
+<span class="d">  signature checked: signed by Adoptium (key 843C48A565F8F04B)
+  link   ~/.jkit/global/jdk → ~/.jkit/tools/jdk/21.0.13.1+2-temurin</span>
+<span class="p">$ </span><span class="c">jkit use jdk@17 zulu</span>
+using jdk 17.0.21.1+2 zulu in this shell
+<span class="d">  set    JAVA_HOME=~/.jkit/tools/jdk/17.0.21.1+2-zulu
+  PATH   + ~/.jkit/tools/jdk/17.0.21.1+2-zulu/bin</span>
+<span class="p">$ </span><span class="c">cd ~/src/app</span>
+jkit: using ~/src/app/jkit.toml: jdk 21.0.13.1+2 temurin
+<span class="d">  set    JAVA_HOME=~/.jkit/tools/jdk/21.0.13.1+2-temurin</span></pre>

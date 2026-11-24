@@ -1,0 +1,216 @@
+---
+title: Migrating to jkit
+description: Move to jkit from SDKMAN, asdf, mise, jEnv, hand-installed JDKs or OS packages, keeping your projects' existing version files.
+sidebar:
+  order: 9
+  label: Migrating
+---
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+This guide is for people who already manage Java some other way and want to switch to jkit. The
+short story is the same for every tool: install jkit, stop the old tool from setting `JAVA_HOME`
+and `PATH` in your shell, and keep your projects' version files, which jkit reads as they are.
+
+jkit installs into `~/.jkit` and doesn't touch other tools' folders, so you can try it before you
+remove anything, and go back by undoing the startup-file change.
+
+## The part that's the same for every tool
+
+Two tools fighting over `JAVA_HOME` is the usual problem after a switch. jkit's hook sets
+`JAVA_HOME` (and `MAVEN_HOME`, `GRADLE_HOME`, `SBT_HOME`, `GRAALVM_HOME`) only when it's empty, so
+if another tool or your profile sets it first, that one wins over jkit's global default. And if
+another tool puts its own `java` on `PATH` after jkit's hook runs, that `java` wins.
+
+`jkit doctor` finds both:
+
+```console
+$ jkit doctor
+warn  JAVA_HOME=~/.sdkman/candidates/java/current is set outside jkit and wins over the global jdk
+      fix: remove the export from your shell profile (~/.bashrc, ~/.zshrc, ~/.profile)
+```
+
+When a command on `PATH` isn't the one jkit chose, it says so too (`'mvn' on PATH is …, not
+$MAVEN_HOME/bin/mvn`), with the fix: load the jkit hook after other `PATH` changes, or remove the
+other one.
+
+Run it after each step below, in a new shell, until it has no warnings about these. `jkit status`
+shows the same per tool, as `outside`.
+
+## From SDKMAN
+
+jkit reads `.sdkmanrc`, so projects that have one work without changes, and SDKMAN users on the
+same team can keep using it (see [Teams](/guides/teams/)).
+
+<Steps>
+
+1. Install jkit and its hook:
+
+   ```bash
+   jkit hook --install --auto-switch
+   ```
+
+   `--auto-switch` gives you what SDKMAN's `sdkman_auto_env=true` does: switching to a project's
+   versions on `cd`.
+
+2. Install the versions you use. In a project with an `.sdkmanrc`, `jkit sync` installs what it
+   names. For your other JDKs, SDKMAN's id tells you the vendor:
+
+   | SDKMAN suffix | jkit vendor | | SDKMAN suffix | jkit vendor |
+   |---|---|---|---|---|
+   | `tem` | `temurin` | | `graalce` | `graalvm-ce` |
+   | `zulu` | `zulu` | | `graal` | `graalvm` |
+   | `amzn` | `corretto` | | `nik` | `liberica-nik` |
+   | `librca` | `liberica` | | `mandrel` | `mandrel` |
+   | `ms` | `microsoft` | | `oracle` | `oracle` |
+   | `sapmchn` | `sapmachine` | | `open` | `openjdk` |
+   | `sem` | `semeru` | | `kona` | `kona` |
+   | `albba` | `dragonwell` | | `jbr` | `jetbrains` |
+   | `trava` | `trava` | | `bsg` | `bisheng` |
+
+   So `21.0.5-tem` is `jkit install jdk@21.0.5 temurin`, and `21.0.5.fx-zulu` is
+   `jkit install jdk@21.0.5 zulu --fx`. Maven, Gradle and sbt have no vendor:
+   `jkit install maven@3.9.9`.
+
+3. Stop SDKMAN from loading. Its installer added these lines to the end of `~/.bashrc` or
+   `~/.zshrc`; comment them out or delete them:
+
+   ```bash
+   #THIS MUST BE AT THE END OF THE FILE FOR SDKMAN TO WORK!!!
+   export SDKMAN_DIR="$HOME/.sdkman"
+   [[ -s "$HOME/.sdkman/bin/sdkman-init.sh" ]] && source "$HOME/.sdkman/bin/sdkman-init.sh"
+   ```
+
+   Keeping SDKMAN loaded and moving jkit's block after it fixes `PATH`, but SDKMAN still sets
+   `JAVA_HOME` (and `MAVEN_HOME`, `GRADLE_HOME`) to its `current` versions, which then win over
+   jkit's global defaults. If you want both for a while, also turn off `sdkman_auto_env` in
+   `~/.sdkman/etc/config`, so only one tool switches on `cd`.
+
+4. Open a new shell and check:
+
+   ```bash
+   jkit doctor
+   jkit status
+   ```
+
+5. When you no longer need it, delete SDKMAN's folder, with every candidate it installed:
+
+   ```bash
+   rm -rf ~/.sdkman
+   ```
+
+</Steps>
+
+What jkit reads from `.sdkmanrc`: the `java`, `maven`, `gradle` and `sbt` lines. Other
+candidates (kotlin, …) are skipped with one warning. SDKMAN ids have no build number, so
+`21.0.5-tem` matches the newest 21.0.5 build. Early-access ids (`26.ea.20-open`) work; old GraalVM
+and Mandrel ids that name the GraalVM release instead of the Java version (`22.3.r17-grl`) don't,
+and jkit says to use the Java version (`21.0.5-graalce`).
+
+## From asdf or mise
+
+jkit reads `.tool-versions`, the file both use:
+
+```text title=".tool-versions"
+java temurin-21.0.5+11.0.LTS
+maven 3.9.9
+```
+
+<Steps>
+
+1. Install jkit and its hook: `jkit hook --install --auto-switch`.
+
+2. In each project, `jkit sync` installs what `.tool-versions` names.
+
+3. Stop asdf or mise from putting their `java` on `PATH`. If you don't use them for anything
+   else, remove the line in your startup file that loads them (`eval "$(mise activate bash)"`, or
+   asdf's shims folder on `PATH`). If you still use them for other languages, remove `java` from
+   their global configuration instead (`~/.tool-versions` for asdf, `~/.config/mise/config.toml`
+   for mise), or remove asdf's Java plugin (`asdf plugin remove java`). Also remove any line that
+   sets `JAVA_HOME` for them.
+
+4. Open a new shell and run `jkit doctor`.
+
+</Steps>
+
+How jkit reads `.tool-versions`:
+
+- `java`, `maven`, `gradle` and `sbt` lines. Other tools are skipped with one warning.
+- asdf's vendor names that differ from jkit's are mapped (`adoptopenjdk` → `temurin`,
+  `graalvm-community` → `graalvm-ce`, `oracle-graalvm` → `graalvm`, `semeru-openj9` → `semeru`);
+  the rest are used as jkit vendor names. A `-javafx` or `-fx` vendor suffix asks for a JavaFX
+  build.
+- A plain number (`java 21`) means any vendor; `latest` means the newest.
+- Only the first version on a line counts, not asdf's fallbacks. `system`, `ref:` and `path:` are
+  skipped with a warning.
+- asdf's Zulu ids use Zulu's own numbering, which doesn't match; write those as `java 21` or move
+  them to a `jkit.toml`.
+
+<Aside type="caution">
+asdf keeps its global versions in `~/.tool-versions`. jkit's search for a project file stops at
+your home folder and includes it, so a `java` line there applies to every folder under your home
+that has no project file of its own, like a personal default. Remove the line if you'd rather
+use `jkit use … --global`.
+</Aside>
+
+mise's own `mise.toml` and `.mise.toml` aren't read; for projects that use them, add a
+`jkit.toml` (`jkit pin jdk@21`).
+
+## From jEnv
+
+jEnv doesn't install JDKs; it switches between ones you installed. So with jkit you install them
+again, then remove jEnv:
+
+<Steps>
+
+1. Install jkit and its hook, then the JDKs you use (`jkit install jdk@17`, `jkit install jdk@21`).
+
+2. Remove jEnv from your startup file: the lines that put `~/.jenv/bin` on `PATH` and run
+   `eval "$(jenv init -)"`. If you enabled jEnv's `export` plugin, that is what set `JAVA_HOME`;
+   it goes with the init line.
+
+3. Open a new shell, run `jkit doctor`, and set your default: `jkit use jdk@21 --global`.
+
+</Steps>
+
+Projects keep their `.java-version` files. jkit reads a plain version (`17`, `17.0.2`, or `1.8`,
+read as 8) and uses any vendor. jEnv's own names (`openjdk64-17.0.2`) and `system` aren't versions,
+so jkit skips them with a warning; replace them with the number, or pin with `jkit pin jdk@17`.
+jEnv's global choice, in `~/.jenv/version`, isn't read.
+
+## From manual installs and OS packages
+
+If you installed JDKs by unpacking archives, with an installer, or with your OS's package manager
+(`apt install openjdk-21-jdk`, `brew install openjdk`), there's nothing to uninstall to start using
+jkit. Its hook puts its own `bin` folders first on `PATH`, so `java` is jkit's, as long as nothing
+sets `JAVA_HOME` or `PATH` after it.
+
+<Steps>
+
+1. Install jkit and its hook, then a JDK: `jkit install jdk@21`.
+
+2. Find and remove the lines that set `JAVA_HOME` (or add a JDK's `bin` to `PATH`). The usual
+   places: `~/.bashrc`, `~/.bash_profile`, `~/.profile`, `~/.zshrc`, `~/.zprofile`, and, for the
+   whole machine, `/etc/environment` and `/etc/profile.d/`. On macOS, look for
+   `export JAVA_HOME=$(/usr/libexec/java_home …)`.
+
+3. Open a new shell. `jkit doctor` should report `no *_HOME variable set outside jkit` and that
+   `java` on `PATH` comes from jkit's versions.
+
+</Steps>
+
+You can keep the OS packages: other packages may depend on them, and `update-alternatives` and
+`/usr/bin/java` are left alone. Programs that call `/usr/bin/java` by its full path keep using the
+OS's Java. Remove the packages with your package manager once nothing needs them.
+
+On Windows, also check the system and user environment variables (`JAVA_HOME`, and JDK folders in
+`Path`) that an installer may have set. See [Windows](/guides/windows/).
+
+## After migrating
+
+- Projects: your `.sdkmanrc`, `.tool-versions` and `.java-version` files keep working. Add a
+  `jkit.toml` when you want jkit-only features (a vendor for a `.java-version` project, the
+  `graalvm` slot); in a folder with both, `jkit.toml` wins for jkit. See
+  [Per-project versions](/guides/projects/).
+- IDEs: point them at `~/.jkit/global/jdk` instead of the old tool's folder. See
+  [IDEs](/guides/ides/).
+- How jkit compares with each of these tools: [Why jkit](/why/overview/).

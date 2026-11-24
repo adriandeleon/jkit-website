@@ -1,0 +1,47 @@
+---
+title: Docs for LLMs
+description: The jkit docs as plain text for language models (llms.txt, llms-full.txt, llms-small.txt), and how to give them to an AI coding tool.
+---
+
+import { LinkCard } from '@astrojs/starlight/components';
+
+These docs are also published as plain Markdown files that language models read well, following
+the [llms.txt](https://llmstxt.org) convention. Give one to an AI assistant when you want it to
+answer questions about jkit, or to use jkit correctly in your project.
+
+| File | What's in it | Use it when |
+| --- | --- | --- |
+| [`/llms.txt`](/llms.txt) | A short description of jkit and links to the other files | A tool asks for a site's `llms.txt`, or the model can fetch links itself |
+| [`/llms-full.txt`](/llms-full.txt) | Every documentation page, in full | The model has a large context and you want complete answers |
+| [`/llms-small.txt`](/llms-small.txt) | Every page, trimmed of asides and extra detail | The context is small, or you pay per token |
+
+News posts are left out of these files; [What's new](/whats-new/) is included.
+
+## Giving the docs to an assistant
+
+- **Chat assistants** (Claude, ChatGPT, Gemini): attach `llms-full.txt`, or paste
+  `https://jkit-project.dev/llms-full.txt` and ask the assistant to read it, then ask your
+  question.
+- **Coding agents** (Claude Code, Codex, Cursor, Copilot, Aider): they don't need the whole site to
+  build your project. Paste the short instructions from the [AI agents guide](/guides/ai-agents/)
+  into your `AGENTS.md`, `CLAUDE.md` or rules file, and add a line pointing at
+  `https://jkit-project.dev/llms.txt` for anything else.
+- **Editors with docs indexing** (such as Cursor's `@Docs`): add `https://jkit-project.dev/` as a
+  documentation source.
+
+## What a model most needs to know
+
+If you only give a model one paragraph, give it this:
+
+```markdown
+This machine manages JDKs, Maven, Gradle and sbt with jkit (https://jkit-project.dev/llms.txt).
+Each shell command you run starts a new shell, so run builds through `jkit exec`, for example
+`jkit exec -- mvn verify` or `jkit exec jdk@17 -- java -version`, instead of `jkit use`.
+`jkit status --json` shows what is active and what the project file (jkit.toml) wants.
+Exit code 3 means a version isn't installed: `jkit install jdk@17` installs it (ask first; it
+downloads). No jkit command prompts. Don't change the global default or pass
+--allow-unverified unless asked.
+```
+
+<LinkCard title="Using jkit from AI agents" href="/guides/ai-agents/" description="The full guide: jkit exec, --json, exit codes, signals, and the AGENTS.md snippet." />
+<LinkCard title="JSON output" href="/reference/json/" description="Every document jkit prints with --json, field by field." />

@@ -1,0 +1,195 @@
+---
+title: Shells
+description: How the jkit hook works in bash, zsh, fish and PowerShell, where it goes, switching on cd, tab completion, nested shells and other tools in your startup file.
+sidebar:
+  order: 20
+---
+
+import { Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+This page covers the shell-specific details of the jkit hook: what it does in each shell, which
+startup file it goes into, what works where, and how it gets along with nested shells and other
+tools such as SDKMAN or nvm. For the hook's full reference, see [shell hook](/reference/shell-hook/).
+
+## What works in each shell
+
+| | bash | zsh | fish | PowerShell |
+| --- | --- | --- | --- | --- |
+| Global versions on `PATH`, `JAVA_HOME` set | yes | yes | yes | yes |
+| `jkit use` and `jkit sync` change the current shell | yes | yes | yes | yes |
+| `jkit hook --install` adds it for you | yes | yes | yes | no: add it [by hand](/guides/windows/#load-the-hook-in-powershell) |
+| Switching on `cd` (auto-switch) | yes, at the next prompt | yes | yes, interactive shells | not yet |
+| Tab completion | yes | yes, through bashcompinit | no | no |
+
+Without any hook, `jkit exec` and `jkit env` still work in every shell; only `jkit use` (without
+`--global`) needs the hook.
+
+## What the hook does
+
+The hook is a short script that `jkit hook <shell>` prints and your startup file loads. In every
+shell it:
+
+1. Sets `JKIT_SHELL` to the shell's name.
+2. Puts the global `bin` folders first on `PATH`: `~/.jkit/global/jdk/bin`, then Maven, Gradle
+   and sbt, each only if it isn't there already.
+3. Sets `JAVA_HOME`, `MAVEN_HOME`, `GRADLE_HOME`, `SBT_HOME` and `GRAALVM_HOME` to the global links
+   (`~/.jkit/global/jdk` and so on), but **only when the variable isn't set yet** and the link
+   exists.
+4. Defines a `jkit` shell function. It runs the jkit binary with `JKIT_ENV_FILE` pointing at a
+   temporary file; commands that change the shell (`use`, `reset`, `sync`, `pin`) write their
+   changes there, and the function applies them to your shell when jkit exits.
+
+In bash and zsh it also loads tab completion. With auto-switch on, it adds the code that switches
+on `cd`.
+
+The function calls jkit by the absolute path it had when the hook loaded, so a `bin/jkit` in a
+project's tool folder is never what runs. If that file is gone (a package manager moved it), it
+falls back to the first `jkit` on `PATH` outside jkit's own folder.
+
+## Startup files
+
+`jkit hook --install` picks the shell from `$SHELL`; name it to choose another
+(`jkit hook zsh --install`). It appends a block between `# >>> jkit >>>` and `# <<< jkit <<<` at
+the end of the file, does nothing if the hook is already there (also when you added a line by
+hand), and `jkit hook --uninstall` takes exactly that block out again.
+
+<Tabs syncKey="shell">
+<TabItem label="bash">
+
+File: `~/.bashrc`. Load it by hand with:
+
+```bash
+eval "$(jkit hook bash)"
+```
+
+`~/.bashrc` is read by interactive shells that aren't login shells. Login shells (macOS
+Terminal, an ssh session) read `~/.bash_profile`, `~/.bash_login` or `~/.profile` instead. When
+yours doesn't load `~/.bashrc`, `jkit hook --install` says so; add this to it:
+
+```bash title="~/.bash_profile"
+[ -f ~/.bashrc ] && . ~/.bashrc
+```
+
+</TabItem>
+<TabItem label="zsh">
+
+File: `$ZDOTDIR/.zshrc`, or `~/.zshrc` when `ZDOTDIR` isn't set. Load it by hand with:
+
+```bash
+eval "$(jkit hook zsh)"
+```
+
+`.zshrc` is read by every interactive zsh, login or not.
+
+</TabItem>
+<TabItem label="fish">
+
+File: `~/.config/fish/conf.d/jkit.fish` (under `$XDG_CONFIG_HOME` when that is set), a file of its
+own that `--uninstall` deletes. Load it by hand with:
+
+```fish
+jkit hook fish | source
+```
+
+fish reads `conf.d` in every fish, scripts and `fish -c` included; the block loads the hook only
+in interactive shells.
+
+</TabItem>
+<TabItem label="PowerShell">
+
+`jkit hook --install` doesn't edit PowerShell profiles yet. Add this line to your `$PROFILE`
+(`notepad $PROFILE`):
+
+```powershell
+jkit hook pwsh | Out-String | Invoke-Expression
+```
+
+PowerShell 7 and Windows PowerShell 5.1 each have their own profile. The hook works on Windows,
+and also on Linux and macOS if you use PowerShell there. See [Windows](/guides/windows/).
+
+</TabItem>
+</Tabs>
+
+After installing, open a new shell, or load the hook in the current one with the line shown for
+your shell. `jkit doctor` reports whether the hook is loaded.
+
+## Switching on `cd`
+
+Off by default. Turn it on with:
+
+```bash
+jkit hook --install --auto-switch
+```
+
+That sets `auto_switch = true` under `[shell]` in `~/.jkit/config.toml` (`JKIT_AUTO_SWITCH=1`
+works too). New shells then switch to a project's versions when you enter it and back when you
+leave, and print every variable they change on stderr.
+
+How each shell does it:
+
+- **zsh** runs the switch from a `chpwd` hook, right when the directory changes.
+- **fish** runs it when `PWD` changes, in interactive shells only (fish scripts that load the hook
+  `cd` too).
+- **bash** has no directory-change hook, so jkit adds a function to `PROMPT_COMMAND`. It
+  compares `$PWD` with the last one before doing anything, so a prompt costs no extra process
+  unless you changed folders.
+- **PowerShell** doesn't switch on `cd` yet. Run `jkit sync` after entering a project.
+
+<Aside type="caution" title="bash switches at the next prompt">
+In bash the switch happens when the next prompt is drawn, so `cd app && java -version` on one
+line still runs the old JDK. In one-liners and scripts, use `jkit exec -- java -version`.
+</Aside>
+
+Entering a project never downloads anything: a version that isn't installed stays on its shell or
+global choice, with a note to run `jkit sync`. Editing the project file takes effect on the next
+`cd`, `jkit sync` or `jkit pin`. See [projects](/guides/projects/).
+
+## Tab completion
+
+- **bash**: the hook loads it. The `.deb` and `.rpm` packages also install it for bash.
+- **zsh**: the hook loads the bash completion through zsh's `bashcompinit`, which the script
+  turns on itself.
+- **fish** and **PowerShell**: no completion yet.
+
+To load completion without the hook, for example in a bash setup of your own:
+
+```bash
+source <(jkit completion bash)
+```
+
+## Nested shells
+
+A shell started from another one (typing `bash`, `zsh` or `fish`, a terminal inside an editor
+started from your shell) inherits its environment: `PATH`, `JAVA_HOME`, and any `jkit use` choice.
+When the child loads the hook again, it adds no duplicate `PATH` entries, and because it sets
+`JAVA_HOME` only when it is unset, the parent's choice stays in place. `jkit reset jdk` in the
+child goes back to the project or global version, as usual.
+
+Scripts and subshells that don't read your startup file inherit `JKIT_SHELL` but not the `jkit`
+function, so `jkit use` can't change them. `jkit doctor` points this out. Use `jkit exec` there.
+
+`jkit exec` itself starts from the global versions and the project file, not from the current
+shell's `jkit use`; name the version before `--` when you want a specific one.
+
+## Other tools in the same startup file
+
+jkit's block goes at the end of the file, so it runs after whatever was there before.
+
+- **Anything that sets `JAVA_HOME`** before the jkit hook wins: the hook leaves a `JAVA_HOME` that
+  is already set alone. That includes an `export JAVA_HOME=…` you wrote long ago, in `~/.bashrc`,
+  `~/.profile` or `/etc/environment`. `jkit doctor` reports it ("set outside jkit and wins over
+  …"); remove the export.
+- **SDKMAN** asks to be the last thing in the file and puts its own Java first on `PATH` and in
+  `JAVA_HOME`. Let one tool manage Java. If you keep SDKMAN for other tools, make sure it isn't
+  also setting a default Java, and keep the jkit block after SDKMAN's lines. See
+  [migrating](/guides/migrating/).
+- **mise, asdf, jEnv**: the same rule. Only one tool should manage Java and Maven; tools that
+  change `PATH` at every prompt can put their own `java` back in front.
+- **nvm, pyenv, rustup** and other tools for other languages don't touch Java, so their order
+  relative to jkit doesn't matter.
+- **A tool that installs itself after jkit** may append its block below jkit's. If `jkit doctor`
+  says the `java` on `PATH` isn't jkit's, move the jkit block back to the end of the file.
+
+`jkit doctor` checks most of this for you: the hook, `*_HOME` variables set outside jkit, and
+whether `java`, `mvn`, `gradle` and `sbt` on `PATH` are jkit's. See
+[troubleshooting](/help/troubleshooting/).
