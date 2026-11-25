@@ -4,6 +4,7 @@ description: jkit 0.4.0 adds jkit config, jkit prune and jkit self-update, and c
 date: 2026-11-24T23:00:00Z
 authors: adrian
 tags: [release]
+version: "0.4.0"
 excerpt: Settings you can see and change, disk space back, jkit updating itself, and OpenPGP signature checks.
 ---
 
@@ -82,4 +83,4 @@ stdout (`throw '…'` for PowerShell). `eval "$(jkit env)"` then fails too, so a
 a CI step stops there instead of running with half an environment.
 [More](/reference/commands/env/)
 
-All changes are in [What's new](/whats-new/#040).
+All changes are in [What's new](/whats-new/0.4/#040).

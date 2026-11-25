@@ -18,7 +18,7 @@ the *released* jkit, so merge changes for a new jkit feature when that release s
 | Home page | `src/content/docs/index.mdx` |
 | Docs pages | `src/content/docs/{start,why,guides,reference,help}/` |
 | Sidebar, plugins, redirects | `astro.config.mjs` |
-| What's new (changelog) | `src/content/docs/whats-new.md` |
+| What's new (changelog) | generated from jkit's `CHANGELOG.md` by `scripts/GenWhatsNew.java`: `src/content/docs/whats-new.md`, `whats-new/x.y.md`, `src/lib/releases.ts` |
 | News posts | `src/content/docs/news/*.md` (`draft: true` keeps a post out of the build) |
 | Brand colours | `src/styles/theme.css` |
 
@@ -29,7 +29,18 @@ Plugins: [starlight-blog](https://github.com/HiDeoo/starlight-blog) for News (wi
 
 ## At each jkit release
 
-1. Add a section to `src/content/docs/whats-new.md`.
-2. Add a News post (or take `draft: true` off the one prepared for it) and set its date.
+1. Add a News post (or take `draft: true` off the one prepared for it), set its date, and give it
+   `version: "x.y.z"` so What's new links to it as the release's announcement.
+2. Regenerate What's new from the release's `CHANGELOG.md` (JDK 25; the jkit checkout is found as
+   `../jkit`, or pass its path or set `JKIT_REPO`). Only released sections are used; `[Unreleased]`
+   is skipped.
+
+   ```bash
+   java scripts/GenWhatsNew.java
+   ```
 3. Update pages for new or changed commands (`reference/commands/`) and the "not yet" notes
    (search the docs for "not yet" and "preview").
+4. Once the site is deployed, post the News post in
+   [Discussions › Announcements](https://github.com/adriandeleon/jkit/discussions/categories/announcements):
+   its title, its body with site links made absolute (`https://jkit-project.dev/...`), and a last
+   line linking the full announcement, the release's What's new page and the release page.

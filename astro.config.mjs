@@ -30,7 +30,7 @@ export default defineConfig({
       editLink: { baseUrl: "https://github.com/adriandeleon/jkit-website/edit/main/" },
       lastUpdated: true,
       customCss: ["./src/styles/theme.css"],
-      components: { Footer: "./src/components/Footer.astro" },
+      components: { Footer: "./src/components/Footer.astro", PageSidebar: "./src/components/PageSidebar.astro" },
       head: [
         { tag: "meta", attrs: { property: "og:image", content: "https://jkit-project.dev/og.png" } },
         { tag: "meta", attrs: { property: "og:image:width", content: "1280" } },

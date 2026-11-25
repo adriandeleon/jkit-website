@@ -4,6 +4,7 @@ description: jkit is out. One native command to install and switch JDKs from 20+
 date: 2026-11-24T12:00:00Z
 authors: adrian
 tags: [release]
+version: "0.3.0"
 excerpt: jkit is out. One native command to install and switch JDKs from 20+ vendors, Maven, Gradle and sbt, per shell, per project or globally.
 ---
 
@@ -48,7 +49,7 @@ mise, asdf and OS packages, and when one of those is the better fit.
 Project files with `jkit pin` and `jkit sync`, switching on `cd` in bash, zsh and fish,
 `jkit status`, `jkit doctor` and `jkit env` for when something looks wrong, `jkit exec` for
 scripts and agents, and packages for Homebrew, apt, winget, `.deb` and `.rpm`. The full list is
-in [What's new](/whats-new/#030).
+in [What's new](/whats-new/0.3/#030).
 
 ## What's not there yet
 
