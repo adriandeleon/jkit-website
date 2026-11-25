@@ -1,0 +1,149 @@
+---
+// Starlight's right sidebar, except on the What's new pages, where it lists the release series and,
+// for each release on the page, its date, its sections (Added, Changed, Fixed…) and the news post
+// that announced it. The data comes from src/lib/releases.ts (scripts/GenWhatsNew.java).
+import Default from "@astrojs/starlight/components/PageSidebar.astro";
+import MobileTableOfContents from "@astrojs/starlight/components/MobileTableOfContents.astro";
+import { releaseSeries, releases } from "../lib/releases";
+
+const route = Astro.locals.starlightRoute;
+const id = route.id.replace(/\/$/, "");
+const seriesMatch = /^whats-new(?:\/(\d+\.\d+))?$/.exec(id);
+const activeSeries = seriesMatch ? (seriesMatch[1] ?? releaseSeries[0].version) : undefined;
+
+type Entry = { version: string; slug: string; date?: string; post?: string; sections: { slug: string; text: string }[] };
+const entries: Entry[] = [];
+if (activeSeries) {
+  for (const h of route.headings) {
+    if (h.depth === 2 && releases[h.text]) {
+      entries.push({ version: h.text, slug: h.slug, ...releases[h.text], sections: [] });
+    } else if (h.depth === 3 && entries.length > 0) {
+      entries[entries.length - 1].sections.push(h);
+    }
+  }
+}
+const fmtDate = (iso: string) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-GB", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+---
+
+{
+  activeSeries ? (
+    <>
+      <div class="lg:sl-hidden">{route.toc && <MobileTableOfContents />}</div>
+      <div class="right-sidebar-panel sl-hidden lg:sl-block">
+        <div class="sl-container">
+          <nav aria-labelledby="release-series-label" class="series">
+            <h2 id="release-series-label">Release series</h2>
+            <ul>
+              {releaseSeries.map((s) => (
+                <li>
+                  <a href={s.href} aria-current={s.version === activeSeries ? "page" : undefined}>
+                    {s.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          {entries.length > 0 && (
+            <nav aria-labelledby="release-toc-label" class="release-toc">
+              <h2 id="release-toc-label">On this page</h2>
+              <ul>
+                {entries.map((r) => (
+                  <li>
+                    <a href={`#${r.slug}`} class="release-link">
+                      {r.version}
+                    </a>
+                    {r.date && <span class="release-date">{fmtDate(r.date)}</span>}
+                    {r.sections.map((sec) => (
+                      <a href={`#${sec.slug}`} class="section-link">
+                        {sec.text}
+                      </a>
+                    ))}
+                    {r.post && (
+                      <a href={r.post} class="section-link post-link">
+                        Announcement
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
+        </div>
+      </div>
+    </>
+  ) : (
+    <Default />
+  )
+}
+
+<style>
+  .right-sidebar-panel {
+    padding: 1rem var(--sl-sidebar-pad-x);
+  }
+  .sl-container {
+    width: calc(var(--sl-sidebar-width) - 2 * var(--sl-sidebar-pad-x));
+  }
+  @media (min-width: 72rem) {
+    .sl-container {
+      max-width: calc(
+        ((100vw - var(--sl-sidebar-width) - 2 * var(--sl-content-pad-x) - 2 * var(--sl-sidebar-pad-x)) * 0.25)
+      );
+    }
+  }
+  h2 {
+    color: var(--sl-color-white);
+    font-size: var(--sl-text-h5);
+    font-weight: 600;
+    line-height: var(--sl-line-height-headings);
+    margin-bottom: 0.5rem;
+  }
+  ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  a {
+    display: block;
+    font-size: var(--sl-text-xs);
+    text-decoration: none;
+    color: var(--sl-color-gray-3);
+    overflow-wrap: anywhere;
+    padding-block: 0.125rem;
+  }
+  a:hover,
+  a[aria-current="page"] {
+    color: var(--sl-color-white);
+  }
+  a[aria-current="page"] {
+    font-weight: 600;
+  }
+  .series {
+    margin-bottom: 1.5rem;
+  }
+  .release-toc li + li {
+    margin-top: 0.75rem;
+  }
+  .release-link {
+    color: var(--sl-color-white);
+    font-weight: 600;
+    font-size: var(--sl-text-sm);
+  }
+  .release-date {
+    display: block;
+    font-size: var(--sl-text-xs);
+    color: var(--sl-color-gray-3);
+    margin-bottom: 0.125rem;
+  }
+  .section-link {
+    padding-inline-start: 0.75rem;
+  }
+  .post-link {
+    color: var(--sl-color-accent-high);
+  }
+</style>
