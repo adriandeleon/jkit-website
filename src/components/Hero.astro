@@ -1,0 +1,15 @@
+---
+// Starlight's hero, with the jkit lockup (icon + wordmark) above the title.
+import { Image } from 'astro:assets';
+import Default from '@astrojs/starlight/components/Hero.astro';
+import icon from '../assets/icon.svg';
+import wordmarkLight from '../assets/wordmark-light.svg';
+import wordmarkDark from '../assets/wordmark-dark.svg';
+---
+
+<div class="hero-brand sl-flex">
+	<Image src={icon} alt="" class="hero-brand-icon" loading="eager" />
+	<Image src={wordmarkLight} alt="jkit" class="hero-brand-word dark:sl-hidden" loading="eager" />
+	<Image src={wordmarkDark} alt="jkit" class="hero-brand-word light:sl-hidden" loading="eager" />
+</div>
+<Default />

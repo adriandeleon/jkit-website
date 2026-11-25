@@ -31,12 +31,18 @@
 
 /* Landing page */
 .hero .tagline { font-size: var(--sl-text-xl); }
-/* The icon sits on top of the title, at every width. */
+/* The jkit lockup (icon + wordmark) sits on top of the title, close to the header. */
+.hero-brand { align-items: center; justify-content: center; gap: 1rem; margin-top: 0.5rem; }
+.hero-brand-icon { width: 4.5rem; height: auto; }
+.hero-brand-word { height: 3.25rem; width: auto; }
+/* The icon's navy tile matches the dark background; outline it there. */
+:root:not([data-theme="light"]) .hero-brand-icon { border-radius: 22%; box-shadow: 0 0 0 1px var(--sl-color-gray-5); }
 .hero { grid-template-columns: 100%; }
-.hero > img { order: 0; width: 6rem; margin-inline: auto; }
 @media (min-width: 50rem) {
-  .hero { grid-template-columns: 100%; }
-  .hero > img { order: 0; width: 7rem; margin-inline: 0; }
+  .hero-brand { justify-content: flex-start; margin-top: 1rem; }
+  .hero-brand-icon { width: 5.5rem; }
+  .hero-brand-word { height: 4rem; }
+  .hero { grid-template-columns: 100%; padding-block: 0.75rem 2.5rem; }
 }
 .compare-table th:first-child,
 .compare-table td:first-child { font-weight: 600; }
