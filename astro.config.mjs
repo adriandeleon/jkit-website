@@ -26,7 +26,10 @@ export default defineConfig({
         alt: "jkit",
       },
       favicon: "/favicon.svg",
-      social: [{ icon: "github", label: "GitHub", href: "https://github.com/adriandeleon/jkit" }],
+      social: [
+        { icon: "comment-alt", label: "Discussions", href: "https://github.com/adriandeleon/jkit/discussions" },
+        { icon: "github", label: "GitHub", href: "https://github.com/adriandeleon/jkit" },
+      ],
       editLink: { baseUrl: "https://github.com/adriandeleon/jkit-website/edit/main/" },
       lastUpdated: true,
       customCss: ["./src/styles/theme.css"],

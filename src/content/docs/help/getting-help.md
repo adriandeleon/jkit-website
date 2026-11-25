@@ -1,6 +1,6 @@
 ---
 title: Getting help
-description: Where to look when jkit doesn't do what you expect, what to include in a bug report, and how to report a security problem privately.
+description: Where to look when jkit doesn't do what you expect, where to ask questions, what to include in a bug report, and how to report a security problem privately.
 sidebar:
   order: 3
 ---
@@ -29,6 +29,16 @@ jkit doctor --network        # also checks that the download sources can be reac
 jkit's errors end with hints: indented lines with the command to run next. Most problems are
 solved by running one of them. The [troubleshooting](/help/troubleshooting/) page lists the common
 messages by symptom, and the [FAQ](/help/faq/) answers the common questions.
+
+## Ask a question
+
+Questions, ideas and show-and-tell go in
+[GitHub Discussions](https://github.com/adriandeleon/jkit/discussions). Search there first; the
+answer may already be in a thread. Every release and news post is also announced in the
+[Announcements](https://github.com/adriandeleon/jkit/discussions/categories/announcements)
+category, where you can comment on it or subscribe to hear about the next one.
+
+Something that's clearly broken is a bug: open an issue instead, as below.
 
 ## Report a bug
 
