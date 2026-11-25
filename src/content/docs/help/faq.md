@@ -219,6 +219,11 @@ moves a global default along with it. Old builds stay until you run `jkit prune`
 
 ## Help and contributing
 
+### Where can I ask a question?
+
+In [GitHub Discussions](https://github.com/adriandeleon/jkit/discussions). Ideas and feedback are
+welcome there too. See [getting help](/help/getting-help/#ask-a-question).
+
 ### How do I report a bug?
 
 Open an [issue on GitHub](https://github.com/adriandeleon/jkit/issues) with `jkit --version`,
