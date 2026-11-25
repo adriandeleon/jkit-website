@@ -1,13 +1,13 @@
 ---
 title: IDEs
-description: Point IntelliJ IDEA, VS Code, Eclipse and NetBeans at the JDKs, Maven and Gradle that jkit installs.
+description: Use jkit from Editora, or point IntelliJ IDEA, VS Code, Eclipse and NetBeans at the JDKs, Maven and Gradle that jkit installs.
 sidebar:
   order: 11
 ---
 
-This page shows how to use jkit's JDKs and build tools from an IDE. IDEs don't read `jkit.toml`
-and don't load your shell's startup file, so you tell them where the JDK is once. There are two
-kinds of path to give them.
+This page shows how to use jkit's JDKs and build tools from an IDE. [Editora](#editora) works with
+jkit directly. Other IDEs don't read `jkit.toml` and don't load your shell's startup file, so you
+tell them where the JDK is once. There are two kinds of path to give them.
 
 | Path | Follows | Use it for |
 | --- | --- | --- |
@@ -39,6 +39,16 @@ when there is no pin. The folder names under `tools/jdk/` are the version and ve
 After `jkit upgrade`, a new build lands in a new folder. A global link moves to it; an IDE that
 points at an exact `tools/jdk/...` folder keeps the old build until you change it (or until
 `jkit prune` removes the old one). That's the reason to prefer `global/jdk` where you can.
+
+## Editora
+
+[Editora](https://editora-project.dev/) 0.29.0 and later support jkit fully, so there are no paths
+to set. Editora reads the project's pins through jkit (`jkit.toml`, `.sdkmanrc`, `.tool-versions`,
+`.java-version`) and uses jkit's JDKs, Maven, Gradle, sbt and GraalVM for the Java language server
+and for Run and Debug. Its **Java Toolchain** commands run jkit's own commands: install, `sync`,
+`status`, `upgrade`, `prune`, `doctor`, the default version and vendor, switching on `cd`, the
+shell hook, and `self-update`. **Set Project JDK…** can save the choice to `jkit.toml`. See
+[Editora's jkit docs](https://editora-project.dev/docs/build-tools/#jkit).
 
 ## IntelliJ IDEA
 
