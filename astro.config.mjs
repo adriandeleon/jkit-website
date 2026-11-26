@@ -7,6 +7,11 @@ import starlightLinksValidator from "starlight-links-validator";
 
 // Served by GitHub Pages at the root of https://jkit-project.dev (public/CNAME).
 // Starlight adds the sitemap itself, because `site` is set.
+// Cloudflare Web Analytics: cookieless, no personal data. The site is on GitHub Pages and its DNS
+// isn't proxied by Cloudflare, so the beacon goes in by hand. The token is public (it ships in
+// every page); it comes from Cloudflare → Web Analytics → jkit-project.dev.
+const CF_BEACON_TOKEN = "c33f8c994a07473195d7d5b4da03dcfb";
+
 export default defineConfig({
   site: "https://jkit-project.dev",
   // The old single-page URLs keep working.
@@ -39,6 +44,14 @@ export default defineConfig({
         { tag: "meta", attrs: { property: "og:image:width", content: "1280" } },
         { tag: "meta", attrs: { property: "og:image:height", content: "640" } },
         { tag: "meta", attrs: { name: "twitter:card", content: "summary_large_image" } },
+        {
+          tag: "script",
+          attrs: {
+            defer: true,
+            src: "https://static.cloudflareinsights.com/beacon.min.js",
+            "data-cf-beacon": JSON.stringify({ token: CF_BEACON_TOKEN }),
+          },
+        },
       ],
       plugins: [
         starlightLinksValidator({ errorOnLocalLinks: false, exclude: ["/news/", "/news/**", "/llms*.txt"] }),

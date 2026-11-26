@@ -189,6 +189,9 @@ own. It uses the network only when a command needs it: `search`, `install`, `upg
 Maven Central (`repo.maven.apache.org`), and GitHub for sbt and jkit's own releases. Requests
 carry a `jkit/<version>` user agent. `list`, `status`, `env` and `exec` never use the network.
 
+This website is separate from the tool: it counts visits with Cloudflare Web Analytics, which uses
+no cookies and collects no personal data.
+
 ### Can I use it offline?
 
 Partly. Everything that works with what's installed (`use`, `exec`, `env`, `status`, `list`)
