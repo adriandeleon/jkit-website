@@ -72,10 +72,10 @@ When several builds match:
 ```console
 $ jkit remove maven@3.9
 error: maven@3.9 matches 2 installed builds
-  3.9.16
+  3.9.16   (global)
   3.9.15
   remove one:  jkit remove maven@3.9.15
-  remove all:  jkit remove maven@3.9 --all
+  remove all:  jkit remove maven@3.9 --all --force
 ```
 
 More:

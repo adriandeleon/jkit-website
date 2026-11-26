@@ -40,8 +40,8 @@ Any failure prints this, with the same exit code the process exits with:
 {
   "schemaVersion": 1,
   "error": {
-    "message": "no installed JDK matches 99 from temurin (default vendor)",
-    "hints": ["install it:          jkit install jdk@99"],
+    "message": "no installed JDK matches 17 from temurin (default vendor)",
+    "hints": ["install it:          jkit install jdk@17"],
     "exitCode": 3
   }
 }

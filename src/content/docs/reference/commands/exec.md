@@ -30,6 +30,10 @@ jkit exec [-hV] [--no-project] [--dir=<path>] [[<tool>[@version]
 `--` is required, and everything after it belongs to the command: `jkit exec -- mvn --help` shows
 Maven's help.
 
+In jkit 0.4.0, PowerShell with the hook loaded drops the `--` before jkit sees it, and jkit fails
+with `Unknown option`. Call `jkit.exe exec … -- …` there, which skips the hook's `jkit` function;
+it's fixed for the next release.
+
 It never uses the network and never installs anything. A version that isn't installed (named
 before `--`, or pinned by the project) exits with code 3 and the `jkit install` command to run. A
 pin for a tool you name before `--` doesn't need to be installed, since your choice replaces it.

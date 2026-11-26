@@ -137,9 +137,15 @@ sha256sum --check --ignore-missing SHA256SUMS
 
 From 0.4.0, `SHA256SUMS.asc` next to it is the OpenPGP signature of `SHA256SUMS` by jkit's release
 key, `A944 4E8F 5048 FEBC B942 E110 FC89 EBE6 8C45 39E6`, which `jkit self-update` also checks.
-Import the public key,
-[`jkit-release.asc`](https://github.com/adriandeleon/jkit/blob/main/jkit-core/src/main/resources/dev/jkit/core/keys/jkit-release.asc)
-in jkit's repository, check its fingerprint matches, then:
+Import the public key, `jkit-release.asc` from jkit's repository, and check that the fingerprint
+gpg prints matches:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/adriandeleon/jkit/v0.4.0/jkit-core/src/main/resources/dev/jkit/core/keys/jkit-release.asc | gpg --import
+gpg --fingerprint A9444E8F5048FEBCB942E110FC89EBE68C4539E6
+```
+
+Then check the signature:
 
 ```bash
 gpg --verify SHA256SUMS.asc SHA256SUMS
@@ -176,11 +182,17 @@ jkit needs a small shell function: the hook. It also puts your global versions o
     added the jkit hook to ~/.bashrc:
         # >>> jkit >>>
         # added by jkit hook bash --install; remove with jkit hook bash --uninstall
-        if command -v jkit >/dev/null 2>&1; then eval "$(jkit hook bash)"; fi
+        __jkit='/usr/bin/jkit'
+        if [ ! -x "$__jkit" ]; then __jkit=; IFS=: read -r -a __jkit_p <<< "$PATH"; for __jkit_d in "${__jkit_p[@]}"; do case "$__jkit_d/" in '/home/you/.jkit/'*) ;; *) if [ -x "$__jkit_d/jkit" ]; then __jkit=$__jkit_d/jkit; break; fi ;; esac; done; unset __jkit_p __jkit_d; fi
+        if [ -n "$__jkit" ]; then eval "$("$__jkit" hook bash)"; fi; unset __jkit
         # <<< jkit <<<
-      new bash shells load it; for this one: eval "$(jkit hook bash)"
+      file   ~/.bashrc updated
+      new bash shells load it; for this one: eval "$('/usr/bin/jkit' hook bash)"
       to also switch to a project's versions on cd: jkit hook bash --install --auto-switch
     ```
+
+    The block runs jkit by its full path (here `/usr/bin/jkit`, from apt), and looks for it on
+    `PATH` if it has moved.
 
     Tab completion comes with the hook. To load it by hand instead, add
     `eval "$(jkit hook bash)"` to `~/.bashrc`.
@@ -212,6 +224,10 @@ jkit needs a small shell function: the hook. It also puts your global versions o
     # add this line, save, and open a new PowerShell window:
     jkit hook pwsh | Out-String | Invoke-Expression
     ```
+
+    Windows PowerShell 5.1 (the one Windows comes with) runs no profile until you allow scripts:
+    `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`. PowerShell 7 allows them already. The
+    [Windows guide](/guides/windows/#load-the-hook-in-powershell) lists two known issues in 0.4.0.
 
     PowerShell doesn't switch on `cd` yet. Programs started outside a hooked PowerShell (cmd.exe,
     IDEs) see `jkit use … --global` only if you set `JAVA_HOME` to
@@ -245,6 +261,7 @@ $ jkit doctor
 ok    jkit 0.4.0, linux-x64, home ~/.jkit
 info  ~/.jkit doesn't exist yet; the first install creates it
 ok    shell hook loaded (bash)
+ok    jkit on PATH: /usr/bin/jkit
 ok    default vendors: temurin (jdk), graalvm-ce (graalvm); not checked against foojay: no cached vendor list yet
 ok    global links and this shell's choices point at existing installs
 ok    no *_HOME variable set outside jkit

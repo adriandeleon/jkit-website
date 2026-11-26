@@ -93,7 +93,7 @@ jkit exec -- mvn -B verify
 | --- | --- |
 | `0` | Everything pinned is installed (and, with the hook, applied). |
 | `1` | No project file here or above, a broken or ignored project file, a download that failed or was refused, or `--offline` with a pin to download. |
-| `2` | Bad options. |
+| `2` | Bad options, or a pin naming a vendor foojay doesn't know. |
 
 ## JSON
 

@@ -24,7 +24,7 @@ For one JDK that you update twice a year, it's a reasonable choice.
 | --- | --- | --- |
 | Find a version | Browse the vendor's download page | `jkit search jdk` (all vendors), `jkit search jdk@21 zulu` |
 | Download | Pick the right archive for your OS and CPU | `jkit install jdk@21` (picks it for you) |
-| Verify | Fetch the checksum, run `sha256sum -c`; check the signature with `gpg` | Done on every install; refused if there's no checksum |
+| Verify | Fetch the checksum, run `sha256sum -c`; check the signature with `gpg` | Done on every install; refused if there's no checksum or signature to check |
 | Unpack | `tar -xzf … -C ~/jdks` (macOS: the JDK is inside `Contents/Home`) | Done, into `~/.jkit/tools/jdk/<version>` |
 | Make it the default | `export JAVA_HOME=…` and `export PATH="$JAVA_HOME/bin:$PATH"` in `~/.bashrc` | `jkit use jdk@21 --global` |
 | Switch in one shell | Re-export `JAVA_HOME` and `PATH` by hand | `jkit use jdk@17` |

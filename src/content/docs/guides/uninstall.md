@@ -15,7 +15,8 @@ rm -rf ~/.jkit                 # every install, link, cached list and setting
 brew uninstall jkit            # or the command for how you installed it (below)
 ```
 
-Do them in this order: the first step needs jkit.
+Do them in this order: the first step needs jkit. On Windows, skip it and take the hook line out
+of your PowerShell `$PROFILE` by hand ([below](#1-remove-the-shell-hook)).
 
 ## 1. Remove the shell hook
 

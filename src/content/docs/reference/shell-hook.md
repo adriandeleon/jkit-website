@@ -108,7 +108,7 @@ that isn't inside `~/.jkit`, and prints `jkit: not found on PATH` (exit code 127
 | --- | --- | --- | --- | --- |
 | Load by hand | `eval "$(jkit hook bash)"` | `eval "$(jkit hook zsh)"` | `jkit hook fish \| source` | `jkit hook pwsh \| Out-String \| Invoke-Expression` |
 | `jkit hook --install` | `~/.bashrc` | `$ZDOTDIR/.zshrc`, else `~/.zshrc` | `$XDG_CONFIG_HOME/fish/conf.d/jkit.fish`, else `~/.config/fish/conf.d/jkit.fish` | Not yet: add the line to `$PROFILE` by hand |
-| `jkit use` in this shell | yes | yes | yes | yes |
+| `jkit use` in this shell | yes | yes | yes | yes (Windows PowerShell 5.1: with scripts allowed) |
 | Switching on `cd` | yes, when the prompt is drawn | yes, on `cd` | yes, interactive shells | not yet |
 | Tab completion | yes | yes (through `bashcompinit`) | no | no |
 
@@ -125,6 +125,12 @@ that isn't inside `~/.jkit`, and prints `jkit: not found on PATH` (exit code 127
   profile's variables are untouched. Its temporary file is a `.ps1` with a UTF-8 byte-order mark,
   so Windows PowerShell 5.1 reads non-ASCII folder names correctly. With auto-switch on it prints
   a warning that PowerShell doesn't switch on `cd` yet; `jkit sync` switches by hand.
+  In jkit 0.4.0 the `jkit` function applies `use`, `reset`, `pin` and `sync` by dot-sourcing that
+  file, which Windows PowerShell 5.1's default execution policy blocks: jkit prints the changes and
+  the shell never gets them. Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once (the
+  same policy keeps 5.1 from loading `$PROFILE` at all). Also in 0.4.0, PowerShell drops the `--`
+  the function passes on, so `jkit exec … -- <command>` fails; run `jkit.exe exec …` instead. Both
+  are fixed for the next release.
 
 For any other shell, `jkit env` prints the variables to set, and `jkit exec` runs a command with
 them.

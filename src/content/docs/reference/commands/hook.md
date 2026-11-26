@@ -45,7 +45,8 @@ shell's startup file:
 Without a shell name it uses your login shell, from `$SHELL`. It prints the exact lines it wrote.
 It does nothing to the file if the block is already there, or if another line already loads the
 hook. PowerShell isn't supported yet: add `jkit hook pwsh | Out-String | Invoke-Expression` to
-your `$PROFILE` by hand. See [`jkit hook --install`](/reference/shell-hook/#jkit-hook---install)
+your `$PROFILE` by hand (Windows PowerShell 5.1 loads it only after
+`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`; see [Windows](/guides/windows/#load-the-hook-in-powershell)). See [`jkit hook --install`](/reference/shell-hook/#jkit-hook---install)
 for every rule it follows.
 
 ### `--auto-switch`
@@ -64,7 +65,7 @@ shells keep the hook until they exit.
 
 | Option | Description |
 | --- | --- |
-| `<shell>` | `bash`, `zsh`, `fish` or `pwsh`. With `--install` or `--uninstall`, defaults to your login shell (`$SHELL`); otherwise `bash` (`pwsh` on Windows). |
+| `<shell>` | `bash`, `zsh`, `fish` or `pwsh` (`powershell` works too). On Windows only `pwsh` and `powershell` are accepted. With `--install` or `--uninstall`, defaults to your login shell (`$SHELL`); otherwise `bash` (`pwsh` on Windows). |
 | `--install` | Add the hook to the shell's startup file. Does nothing if it's already there. |
 | `--uninstall` | Take out what `--install` added. |
 | `--auto-switch` | With `--install`: also turn on switching to a project's versions on `cd`. |

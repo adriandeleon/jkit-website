@@ -31,15 +31,15 @@ import HeroTerminal from '../../components/HeroTerminal.astro';
 <TabItem label="macOS / Linux">
 ```bash
 brew install adriandeleon/tap/jkit
-jkit hook --install          # then open a new shell
-jkit install jdk@21          # the first JDK you install becomes the default
+jkit hook --install --auto-switch   # then open a new shell
+jkit install jdk@21                 # the first JDK you install becomes the default
 ```
 </TabItem>
 <TabItem label="Debian / Ubuntu">
 ```bash
 # after adding the Vitrina apt repository (see Install)
 sudo apt install jkit
-jkit hook --install          # then open a new shell
+jkit hook --install --auto-switch   # then open a new shell
 jkit install jdk@21
 ```
 </TabItem>
@@ -76,7 +76,8 @@ Fedora and RHEL packages, plain binaries and building from source are on the
   </Card>
   <Card title="Checked downloads" icon="approve-check">
     HTTPS only, checked against the publisher's checksum, and for Temurin, Microsoft, Corretto,
-    Maven and sbt against their signature too. No checksum, no install.
+    Maven 3.9+ and sbt against their signature too. A download jkit can't check isn't installed
+    unless you say so.
   </Card>
   <Card title="Ready for CI and AI agents" icon="laptop">
     It never prompts. `jkit exec -- mvn verify` runs one command with the project's versions;

@@ -18,7 +18,8 @@ jkit install --help          # one command's options, with examples
 ```
 
 When a version isn't the one you expected, or something seems broken, run the read-only
-diagnostics. They change nothing and don't use the network:
+diagnostics. They change nothing and don't use the network (unless you add `--network` to
+`jkit doctor`):
 
 ```bash
 jkit status                  # what's active here, and why

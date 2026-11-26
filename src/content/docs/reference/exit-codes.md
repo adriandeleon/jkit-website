@@ -17,9 +17,9 @@ every code and what causes it.
 Every failure prints `error: <message>` on stderr, then indented hint lines with commands to try:
 
 ```console
-$ jkit use jdk@99
-error: no installed JDK matches 99 from temurin (default vendor)
-  install it:          jkit install jdk@99
+$ jkit use jdk@17
+error: no installed JDK matches 17 from temurin (default vendor)
+  install it:          jkit install jdk@17
 $ echo $?
 3
 ```
