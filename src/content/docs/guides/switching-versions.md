@@ -242,6 +242,8 @@ default. For a project-specific JDK, point the IDE at the install folder under
 ## PowerShell and Windows
 
 In PowerShell, `jkit use`, `jkit reset` and `--global` work the same once you've added the hook
-to your profile by hand (`jkit hook --install` doesn't edit PowerShell profiles yet). Switching on
-`cd` isn't available in PowerShell yet. See [Windows](/guides/windows/) and
+to your profile by hand (`jkit hook --install` doesn't edit PowerShell profiles yet). Windows
+PowerShell 5.1 needs scripts allowed first, or in jkit 0.4.0 `jkit use` prints changes the shell
+never gets: run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once. Switching on `cd` isn't
+available in PowerShell yet. See [Windows](/guides/windows/) and
 [Shells](/guides/shells/).

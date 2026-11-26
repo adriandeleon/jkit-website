@@ -46,12 +46,13 @@ from Homebrew, apt, dnf or winget tells you the command for that package manager
 Checksums catch a download that was damaged or changed on the way. Signatures also tie it to
 its publisher. jkit now checks Temurin, Microsoft and Corretto JDKs, Maven 3.9.0 and later, and
 sbt against their publisher's OpenPGP signature, using keys built into jkit. A signature that
-doesn't match stops the install:
+doesn't match stops the install, and a good one is reported with who signed it:
 
 ```console
 $ jkit install maven@3.9
 downloading maven 3.9.16 from repo.maven.apache.org
 installed maven 3.9.16 → ~/.jkit/tools/maven/3.9.16
+  folder ~/.jkit/tools/maven/3.9.16 created
   signature checked: signed by Apache Maven (Slawomir Jaranowski, key 9EB80E92EB2135B1)
 ```
 

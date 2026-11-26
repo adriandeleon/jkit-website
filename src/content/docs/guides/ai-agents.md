@@ -37,7 +37,7 @@ it belongs to the command.
 - **Nothing asks a question.** No jkit command prompts or reads stdin. The download progress bar
   is off when jkit isn't attached to a terminal.
 - **`--json`** on `list`, `status`, `env`, `doctor`, `search`, `install`, `upgrade`, `use`, `pin`,
-  `unpin`, `sync` and `remove` prints exactly one JSON document on stdout, also on failure, with
+  `unpin`, `sync`, `remove`, `prune`, `config` and `self-update` prints exactly one JSON document on stdout, also on failure, with
   an `error.hints` list of commands to try. See the [JSON reference](/reference/json/).
 - **Exit codes** are stable: `0` ok, `1` failure, `2` bad arguments, `3` the version isn't
   installed. `jkit exec` passes the command's own exit code through (`126`: jkit couldn't start
@@ -46,9 +46,9 @@ it belongs to the command.
   indented hints, each with the command to run:
 
   ```console
-  $ jkit exec jdk@99 -- java -version
-  error: no installed JDK matches 99 from temurin (default vendor)
-    install it:          jkit install jdk@99
+  $ jkit exec jdk@17 -- java -version
+  error: no installed JDK matches 17 from temurin (default vendor)
+    install it:          jkit install jdk@17
   ```
 
 - **Every change is reported**: folders created or deleted, links set, variables changed

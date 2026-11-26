@@ -18,7 +18,8 @@ hook loaded.
 What is different, in short:
 
 - The hook goes into your PowerShell profile **by hand**; `jkit hook --install` doesn't edit
-  PowerShell profiles yet.
+  PowerShell profiles yet. Windows PowerShell 5.1 also needs scripts allowed first
+  ([see below](#load-the-hook-in-powershell)).
 - PowerShell doesn't switch versions on `cd` yet. Run `jkit sync` in a project instead.
 - cmd.exe and IDEs see the global JDK only after you set `JAVA_HOME` once.
 - Windows on ARM runs the x64 build under emulation.
@@ -84,6 +85,24 @@ jkit hook pwsh | Out-String | Invoke-Expression
 PowerShell 7 (`pwsh`) and Windows PowerShell 5.1 have separate profiles; add the line to each one
 you use. `jkit hook pwsh --install` stops with an error that prints this same line.
 
+Windows PowerShell 5.1 (the one Windows comes with) runs no profile, and no script, until you allow
+them, so the hook never loads. Allow them once for your account; PowerShell 7 allows them already:
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
+
+<Aside type="caution" title="Known issues in jkit 0.4.0">
+- **Windows PowerShell 5.1 without `RemoteSigned`:** `jkit use`, `reset`, `pin` and `sync` print
+  the changes, but the shell never gets them, because the hook applies them through a script file
+  the default policy blocks. The command above fixes it.
+- **`jkit exec … -- <command>` with the hook loaded:** PowerShell drops the `--`, and jkit fails
+  with `Unknown option`. Call the program itself, which skips the hook:
+  `jkit.exe exec jdk@21 -- java -version`.
+
+Both are fixed for the release after 0.4.0.
+</Aside>
+
 Then:
 
 ```powershell
@@ -104,8 +123,9 @@ Switching on `cd` isn't available in PowerShell yet. In a project with a `jkit.t
 jkit sync                  # installs the pins and switches this PowerShell to them
 ```
 
-`jkit exec` works without the hook: `jkit exec -- mvn -v`. On Windows it looks for `.exe`, `.cmd`
-and `.bat` files on the `PATH` it gives the command, so `mvn` runs `mvn.cmd`.
+`jkit exec` works without the hook: `jkit exec -- mvn -v`. In 0.4.0, in a PowerShell with the hook
+loaded, write `jkit.exe exec -- mvn -v` (see the known issues above). On Windows it looks for
+`.exe`, `.cmd` and `.bat` files on the `PATH` it gives the command, so `mvn` runs `mvn.cmd`.
 
 For a script, load the environment once:
 

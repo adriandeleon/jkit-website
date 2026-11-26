@@ -103,6 +103,8 @@ you're new to JDKs and vendors, [Java basics](/start/java-basics/) explains the 
    $ jkit pin jdk@17 zulu
    pinned jdk 17 zulu in ~/src/app/jkit.toml
      file   ~/src/app/jkit.toml created
+     set    JKIT_PROJECT=~/src/app/jkit.toml:1795658527574
+     set    JKIT_PROJECT_JDK=~/.jkit/tools/jdk/17.0.21.1+2-zulu
      set    JAVA_HOME=~/.jkit/tools/jdk/17.0.21.1+2-zulu
      PATH   + ~/.jkit/tools/jdk/17.0.21.1+2-zulu/bin
    $ cat jkit.toml
@@ -125,11 +127,14 @@ you're new to JDKs and vendors, [Java basics](/start/java-basics/) explains the 
    $ jkit doctor
    ok    jkit 0.4.0, linux-x64, home ~/.jkit
    ok    shell hook loaded (bash)
+   ok    jkit on PATH: /usr/bin/jkit
    ok    default vendors: temurin (jdk), graalvm-ce (graalvm)
    ok    global links and this shell's choices point at existing installs
    ok    no *_HOME variable set outside jkit
+   ok    java on PATH comes from jkit's versions
    ok    2 installs, nothing left over
    ok    project ~/src/app (jkit.toml): 1 pin, all installed
+   info  version index: 2 cached lists, newest 3 min old (refetched after 24 h)
    ok    active JDK runs: openjdk version "17.0.21.1" 2026-11-17 LTS (~/.jkit/tools/jdk/17.0.21.1+2-zulu)
    no problems found
    ```

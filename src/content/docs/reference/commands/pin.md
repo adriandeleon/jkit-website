@@ -85,6 +85,7 @@ pinned jdk 21 in ~/src/app/jkit.toml
 $ jkit pin maven@3.9
 pinned maven 3.9 in ~/src/app/jkit.toml
   file   ~/src/app/jkit.toml updated
+  the jkit shell hook isn't active, so this shell is unchanged; run one command with these versions: jkit exec -- <command>, or eval "$(jkit env)"
 $ cat jkit.toml
 # Versions jkit uses in this project: jkit sync installs them.
 [tools]

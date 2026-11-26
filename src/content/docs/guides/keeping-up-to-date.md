@@ -138,8 +138,8 @@ What it does depends on how you installed jkit:
 For a package manager, it only prints the command, because replacing a file that a package
 manager owns would confuse it. Run the command it prints.
 
-First it checks that the release's `SHA256SUMS` is signed by jkit's release key, which is built
-into jkit; a release without a good signature is refused. For a binary from a release archive, it
+For a binary from a release archive, it first checks that the release's `SHA256SUMS` is signed by
+jkit's release key, which is built into jkit; a release without a good signature is refused. It
 then downloads the archive for your platform, checks it against that `SHA256SUMS`, checks that the new binary runs (`jkit --version`), and only then
 replaces the old one. If any step fails, nothing changes. It needs write access to the folder jkit
 is in: run it as the user who owns that folder, or move jkit to a folder on `PATH` that you own.

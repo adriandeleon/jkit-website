@@ -118,6 +118,7 @@ build:
   variables:
     JKIT_VERSION: "0.4.0"
     JKIT_HOME: "$CI_PROJECT_DIR/.jkit-home"
+    FF_DISABLE_UMASK_FOR_DOCKER_EXECUTOR: "true"   # see below
   cache:
     key:
       files: [jkit.toml]
@@ -135,9 +136,14 @@ build:
 ```
 
 GitLab caches only paths inside the project folder, so `JKIT_HOME` moves jkit's home there. It
-must be an absolute path. jkit refuses a home inside a folder that every user can write to
-(without the sticky bit `/tmp` has); if your runner's build folder is like that, the error names
-the folder, and you can use a `JKIT_HOME` elsewhere (without the cache) instead.
+must be an absolute path.
+
+By default GitLab Runner's Docker executor (which gitlab.com's shared runners use) checks out the
+project with `umask 0000`, so every user can write to the project folder and to `jkit.toml`.
+jkit refuses a home in such a folder, and ignores a project file in one, as it would on a shared
+machine. `FF_DISABLE_UMASK_FOR_DOCKER_EXECUTOR` turns that off. If you can't use it, the errors
+name the folder: set `JKIT_PROJECT_FILE: "$CI_PROJECT_DIR/jkit.toml"` to name the project file
+directly, and use a `JKIT_HOME` outside the project (without the cache).
 
 An image that already has jkit and your JDKs (see [Docker](/guides/docker/)) skips the
 `before_script` and the downloads.
@@ -246,9 +252,9 @@ can be reached, which helps on runners behind a proxy.
 
 ## JSON for CI tooling
 
-`list`, `status`, `env`, `doctor`, `search`, `install`, `upgrade`, `use`, `pin`, `unpin`, `sync`
-and `remove` take `--json` and print exactly one JSON document on stdout, also when they fail.
-Progress and messages go to stderr. A failure looks like this:
+`list`, `status`, `env`, `doctor`, `search`, `install`, `upgrade`, `use`, `pin`, `unpin`, `sync`,
+`remove`, `prune`, `config` and `self-update` take `--json` and print exactly one JSON document on
+stdout, also when they fail. Progress and messages go to stderr. A failure looks like this:
 
 ```json
 {
@@ -279,8 +285,8 @@ See the [JSON reference](/reference/json/) and [Scripts](/guides/scripts/) for `
 <Aside type="note">
 Project files are ignored when they or their folder belong to another user (other than root) or
 are writable by every user. CI workspaces are normally owned by the user the job runs as, so this
-rarely matters; when it does, `jkit status` and `jkit sync` say which file was ignored and why,
-and `JKIT_PROJECT_FILE=/full/path/to/jkit.toml` names the file directly. See
+rarely matters outside GitLab's Docker executor (see the GitLab tab above); when it does,
+`jkit status` and `jkit sync` say which file was ignored and why, and `JKIT_PROJECT_FILE=/full/path/to/jkit.toml` names the file directly. See
 [project files](/reference/project-files/).
 </Aside>
 

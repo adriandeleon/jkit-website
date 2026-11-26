@@ -16,7 +16,7 @@ tools such as SDKMAN or nvm. For the hook's full reference, see [shell hook](/re
 | | bash | zsh | fish | PowerShell |
 | --- | --- | --- | --- | --- |
 | Global versions on `PATH`, `JAVA_HOME` set | yes | yes | yes | yes |
-| `jkit use` and `jkit sync` change the current shell | yes | yes | yes | yes |
+| `jkit use` and `jkit sync` change the current shell | yes | yes | yes | yes (Windows PowerShell 5.1: [allow scripts first](/guides/windows/#load-the-hook-in-powershell)) |
 | `jkit hook --install` adds it for you | yes | yes | yes | no: add it [by hand](/guides/windows/#load-the-hook-in-powershell) |
 | Switching on `cd` (auto-switch) | yes, at the next prompt | yes | yes, interactive shells | not yet |
 | Tab completion | yes | yes, through bashcompinit | no | no |
@@ -104,8 +104,10 @@ in interactive shells.
 jkit hook pwsh | Out-String | Invoke-Expression
 ```
 
-PowerShell 7 and Windows PowerShell 5.1 each have their own profile. The hook works on Windows,
-and also on Linux and macOS if you use PowerShell there. See [Windows](/guides/windows/).
+PowerShell 7 and Windows PowerShell 5.1 each have their own profile. Windows PowerShell 5.1 runs
+no profile until you allow scripts: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`. The hook
+works on Windows, and also on Linux and macOS if you use PowerShell there. See
+[Windows](/guides/windows/), which also lists two known issues in jkit 0.4.0.
 
 </TabItem>
 </Tabs>

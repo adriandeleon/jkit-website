@@ -18,9 +18,7 @@ jkit self-update [-hV] [--check] [--json]
 
 1. **Finds the newest release** by reading the `SHA256SUMS` file of the latest release on GitHub
    (always fetched fresh). Pre-releases are on the releases page only, never offered here.
-2. **Checks `SHA256SUMS` is signed by jkit's release key**, built into jkit, using the release's
-   `SHA256SUMS.asc`. A release without a good signature is refused, and nothing changes.
-3. **Works out how this jkit was installed**, from where the binary is:
+2. **Works out how this jkit was installed**, from where the binary is:
 
    | Installed with | How jkit tells | Update |
    | --- | --- | --- |
@@ -31,13 +29,16 @@ jkit self-update [-hV] [--check] [--json]
    | winget | the binary is in winget's `Packages` folder | `winget upgrade AdrianDeLeon.jkit` |
    | a release archive | anything else | jkit replaces itself |
 
-4. **If it's already the newest**, it says so.
-5. **For a package manager's copy**, it prints the command above and changes nothing.
-6. **For a copy from a release archive**, it:
-   1. downloads the `.tar.gz` (`.zip` on Windows) for your platform into `~/.jkit/tmp/`;
-   2. checks it against the release's `SHA256SUMS`;
-   3. unpacks it and runs the new binary's `jkit --version`, which must report the new version;
-   4. copies it next to the old binary and renames it over the old one in one step, keeping the
+3. **If it's already the newest**, it says so.
+4. **For a package manager's copy**, it prints the command above and changes nothing.
+5. **For a copy from a release archive**, it:
+   1. checks that `SHA256SUMS` is signed by jkit's release key, built into jkit, using the
+      release's `SHA256SUMS.asc`; a release without a good signature is refused, and nothing
+      changes;
+   2. downloads the `.tar.gz` (`.zip` on Windows) for your platform into `~/.jkit/tmp/`;
+   3. checks it against the release's `SHA256SUMS`;
+   4. unpacks it and runs the new binary's `jkit --version`, which must report the new version;
+   5. copies it next to the old binary and renames it over the old one in one step, keeping the
       old file's permissions.
 
    If any step fails, the old binary is untouched. Windows can't replace a running `jkit.exe`, so

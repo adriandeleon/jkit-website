@@ -251,7 +251,7 @@ project: none (ignoring ~/src/app/jkit.toml: every user can write to the folder)
 
 ```console
 $ jkit sync
-error: ignoring ~/src/app/jkit.toml: every user can write to the folder
+error: ignoring /home/you/src/app/jkit.toml: every user can write to the folder
   jkit ignores project files in folders other users can change; fix the folder's owner or permissions, or set JKIT_PROJECT_FILE to the file's absolute path
 ```
 
@@ -504,6 +504,26 @@ winget install Microsoft.VCRedist.2015+.x64
 Windows on ARM runs the x64 build under emulation. Windows support is a preview; see
 [Windows](/guides/windows/).
 
+## Windows: PowerShell doesn't change, or `jkit exec` says `Unknown option`
+
+In jkit 0.4.0:
+
+- **`jkit use`, `reset`, `pin` or `sync` print `set JAVA_HOME=…`, but `$env:JAVA_HOME` doesn't
+  change** in Windows PowerShell 5.1. Its default execution policy blocks the script file the hook
+  applies changes through (and keeps `$PROFILE` from loading at all). Allow scripts for your
+  account once, then open a new window:
+
+  ```powershell
+  Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+  ```
+
+  PowerShell 7 (`pwsh`) allows them already.
+- **`jkit exec jdk@21 -- java -version` fails with `Unknown option: '-version'`** in a PowerShell
+  with the hook loaded: PowerShell drops the `--` it passes to the hook's `jkit` function. Run
+  `jkit.exe exec jdk@21 -- java -version`, which skips the function.
+
+Both are fixed for the release after 0.4.0.
+
 ## `jkit remove` refuses
 
 jkit won't remove a build that's the global default or chosen in this shell, because that would
@@ -556,10 +576,10 @@ unfinished installs and leftovers in `~/.jkit/tmp`, with the command to clear th
   details, and [report it](/help/getting-help/).
 - `permission denied: <file>` with `check the folder's owner, or set JKIT_HOME to a folder you can write`:
   part of `~/.jkit` belongs to another user, often after running jkit with `sudo`.
-- `~/.jkit is writable by every user, so anyone could put programs on your PATH`: run the
+- `/home/you/.jkit is writable by every user, so anyone could put programs on your PATH`: run the
   `chmod o-w` command jkit prints. jkit refuses to run with an unsafe home; see
   [shared machines](/guides/shared-machines/).
-- `invalid ~/.jkit/config.toml: ...`: fix the file, or move it away to use the defaults.
+- `invalid /home/you/.jkit/config.toml: ...`: fix the file, or move it away to use the defaults.
   `jkit config` shows each setting and where it comes from.
 
 Every error goes to stderr as `error: ...` followed by indented hints, and `--json` puts the same
