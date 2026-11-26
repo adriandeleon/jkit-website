@@ -128,31 +128,43 @@ winget.
 
 ## Verify a download
 
-Every release lists the SHA-256 checksum of each file in `SHA256SUMS`. Download it from the same
-release, next to your file, and check:
+Put the file you downloaded in a folder with `SHA256SUMS` and, from 0.4.0, `SHA256SUMS.asc`, both
+from the same release, then run the steps below in that folder. With the
+[GitHub CLI](https://cli.github.com), one command gets all three:
 
 ```bash
-sha256sum --check --ignore-missing SHA256SUMS
+gh release download v0.4.0 --repo adriandeleon/jkit -p SHA256SUMS -p SHA256SUMS.asc -p 'jkit-0.4.0-linux-x64.tar.gz'
 ```
 
-From 0.4.0, `SHA256SUMS.asc` next to it is the OpenPGP signature of `SHA256SUMS` by jkit's release
-key, `A944 4E8F 5048 FEBC B942 E110 FC89 EBE6 8C45 39E6`, which `jkit self-update` also checks.
-Import the public key, `jkit-release.asc` from jkit's repository, and check that the fingerprint
-gpg prints matches:
+1. Import jkit's release key, `jkit-release.asc` from jkit's repository, once:
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/adriandeleon/jkit/v0.4.0/jkit-core/src/main/resources/dev/jkit/core/keys/jkit-release.asc | gpg --import
-gpg --fingerprint A9444E8F5048FEBCB942E110FC89EBE68C4539E6
-```
+   ```bash
+   curl -fsSL https://raw.githubusercontent.com/adriandeleon/jkit/v0.4.0/jkit-core/src/main/resources/dev/jkit/core/keys/jkit-release.asc | gpg --import
+   ```
 
-Then check the signature:
+2. Check that `SHA256SUMS` is signed by it, as `jkit self-update` does:
 
-```bash
-gpg --verify SHA256SUMS.asc SHA256SUMS
-```
+   ```bash
+   gpg --verify SHA256SUMS.asc SHA256SUMS
+   ```
 
-To check where and how a file was built, each one also has a GitHub build provenance
-attestation, which the [GitHub CLI](https://cli.github.com) verifies:
+   It must say `Good signature from "jkit release signing key"`, with the fingerprint
+   `A944 4E8F 5048 FEBC B942 E110 FC89 EBE6 8C45 39E6`. gpg also warns that the key "is not
+   certified with a trusted signature". That only means you haven't signed the key yourself:
+   comparing the fingerprint with the one here is the check.
+
+3. Check your file against `SHA256SUMS`:
+
+   ```bash
+   sha256sum --check --ignore-missing SHA256SUMS
+   ```
+
+   It must print `<file>: OK`. On macOS, use `shasum -a 256 --check --ignore-missing SHA256SUMS`.
+   On Windows PowerShell, compare `(Get-FileHash <file>).Hash` with the file's line in
+   `SHA256SUMS`.
+
+To check where and how a file was built, without gpg, each one also has a GitHub build
+provenance attestation, which the GitHub CLI verifies:
 
 ```bash
 gh attestation verify jkit-*-linux-x64.tar.gz --repo adriandeleon/jkit
