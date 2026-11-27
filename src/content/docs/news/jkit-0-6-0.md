@@ -39,6 +39,7 @@ The `.msi` isn't Authenticode-signed, so SmartScreen may say "Windows protected 
 open it. Check it against `SHA256SUMS` or its build attestation first
 ([verify a download](/start/install/#verify-a-download)), then choose *More info* → *Run anyway*.
 
-winget still installs the `.zip`, as before.
+jkit's first winget submission is still waiting on review, so `winget install AdrianDeLeon.jkit`
+doesn't find it yet. Until it does, use the `.msi` or the `.zip`.
 
 All changes are in [What's new](/whats-new/#060).
