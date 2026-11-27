@@ -61,7 +61,7 @@ counts warnings and problems, or says `no problems found`.
 
 ```console
 $ jkit doctor
-ok    jkit 0.5.0, linux-x64, home ~/.jkit
+ok    jkit 0.6.0, linux-x64, home ~/.jkit
 warn  shell hook not loaded: jkit use can't change this shell, and the global versions aren't on PATH
       fix: jkit hook --install, then open a new shell
 ok    jkit on PATH: /usr/bin/jkit

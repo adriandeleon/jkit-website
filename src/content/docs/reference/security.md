@@ -263,6 +263,9 @@ couldn't sign them. A release without a good signature is refused. Releases befo
 - **Homebrew, the apt repository and winget**: the command `jkit self-update` prints downloads
   nothing, so it needs no check. A jkit installed with Homebrew, apt, dnf or winget is left to that
   tool.
+- **The Windows `.msi`** (from 0.6.0): `jkit self-update` checks `SHA256SUMS.asc` first, and prints
+  a PowerShell command that downloads the newer `.msi` into your `%TEMP%` and runs it only if
+  `Get-FileHash` matches the SHA-256 the signed `SHA256SUMS` lists.
 - **An `.rpm` or a `.deb` installed from a file**: dnf and apt don't check the signature of a
   package given as a file or URL, so `jkit self-update` (and `--check`) checks `SHA256SUMS.asc`
   first, and prints a command that downloads the package into a new `mktemp -d` folder and
@@ -293,7 +296,7 @@ Each release on [GitHub](https://github.com/adriandeleon/jkit/releases/latest) h
   from which commit:
 
   ```bash
-  gh attestation verify jkit-0.5.0-linux-x64.tar.gz --repo adriandeleon/jkit
+  gh attestation verify jkit-0.6.0-linux-x64.tar.gz --repo adriandeleon/jkit
   ```
 
 - **A CycloneDX SBOM**, listing the libraries compiled in. It is made from the Linux x64 build: the
@@ -313,7 +316,11 @@ Each release on [GitHub](https://github.com/adriandeleon/jkit/releases/latest) h
   them from the build machine's Visual Studio and checks they are signed by Microsoft. Windows
   Update doesn't patch a copy next to a program, so a fix to them reaches you with the next jkit
   release and `jkit self-update`; with the Visual C++ Redistributable installed, deleting the two
-  DLLs leaves the runtime to Windows Update.
+  DLLs leaves the runtime to Windows Update. The `.msi` (from 0.6.0) installs the same two DLLs
+  next to `jkit.exe`, and a newer `.msi` replaces them.
+- **No Authenticode signature on Windows.** Neither `jkit.exe` nor the `.msi` is Authenticode-signed,
+  so SmartScreen may warn when you open a downloaded `.msi` ("Windows protected your PC"). Check
+  it against `SHA256SUMS` and its attestation before choosing *Run anyway*.
 
 ## Reporting a vulnerability
 

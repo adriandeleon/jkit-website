@@ -1,6 +1,6 @@
 ---
 title: Install jkit
-description: Install jkit with Homebrew, apt, a .deb or .rpm, winget or a plain binary, verify the download, and turn on the shell hook.
+description: Install jkit with Homebrew, apt, a .deb or .rpm, the Windows .msi, winget or a plain binary, verify the download, and turn on the shell hook.
 sidebar:
   order: 2
 ---
@@ -65,19 +65,28 @@ pick your operating system below. jkit is a single native binary and needs no JD
   <TabItem label="Windows">
     Windows x64 is a preview: jkit works there, but is less tested than on macOS and Linux.
 
+    **The installer** (from 0.6.0): download `jkit-<version>-windows-x64.msi` from the
+    [latest release](https://github.com/adriandeleon/jkit/releases/latest) and open it. It asks
+    who jkit is for: *just for you* (in `%LOCALAPPDATA%\Programs\jkit`, on your `PATH`, no
+    administrator rights needed) or *all users* (in `%ProgramFiles%\jkit`, on the system `PATH`,
+    which asks for administrator rights). Open a new terminal afterwards. The `.msi` isn't
+    Authenticode-signed, so SmartScreen may say "Windows protected your PC": check the file
+    against `SHA256SUMS` ([below](#verify-a-download)), then choose *More info* → *Run anyway*.
+
+    **winget**:
+
     ```powershell
     winget install AdrianDeLeon.jkit
     ```
 
     If winget doesn't find it yet (a new release takes a while to reach the winget catalogue),
-    download `jkit-<version>-windows-x64.zip` from the
-    [latest release](https://github.com/adriandeleon/jkit/releases/latest) and put `jkit.exe` in
-    a folder on your `PATH`.
+    use the `.msi`, or download `jkit-<version>-windows-x64.zip` and put `jkit.exe` in a folder
+    on your `PATH`.
 
-    `jkit.exe` needs the Microsoft Visual C++ runtime. winget installs the Visual C++
-    Redistributable (2015 or newer, x64) along with jkit. From 0.5.0 the `.zip` carries the
-    runtime's two DLLs, `vcruntime140.dll` and `vcruntime140_1.dll`, next to `jkit.exe`: keep
-    them next to it, in a folder of its own.
+    `jkit.exe` needs the Microsoft Visual C++ runtime. The `.msi` installs the runtime's two DLLs,
+    `vcruntime140.dll` and `vcruntime140_1.dll`, next to `jkit.exe`, and from 0.5.0 the `.zip`
+    carries them too: keep them next to it, in a folder of its own. winget installs the Visual C++
+    Redistributable (2015 or newer, x64) along with jkit.
 
     Windows on ARM runs the x64 build under emulation. See [Windows](/guides/windows/) for what
     works differently.
@@ -102,7 +111,8 @@ systems. It needs nothing from the system, so it also runs on glibc distribution
 2.34. There is no arm64 musl build yet: GraalVM's native-image can't make one.
 
 A jkit installed this way updates itself with [`jkit self-update`](/reference/commands/self-update/).
-For Homebrew, apt, dnf and winget, `jkit self-update` prints that tool's upgrade command instead.
+For Homebrew, apt, dnf and winget, `jkit self-update` prints that tool's upgrade command instead,
+and for the Windows `.msi` a command that installs the newer `.msi`.
 
 ### From source
 
@@ -123,11 +133,12 @@ sudo install jkit-cli/target/jkit /usr/local/bin/
 | Linux (x64, arm64) | glibc 2.34 or newer, and zlib: Debian 12+, Ubuntu 22.04+, Fedora, RHEL, Rocky or Alma 9+. Not Ubuntu 20.04 or RHEL 8. This applies to the Homebrew build too. |
 | Linux x64 with musl (Alpine), or glibc older than 2.34 | Nothing: the `linux-x64-musl` build is static. There is no arm64 musl build. |
 | macOS (Apple Silicon, Intel) | macOS 14 (Sonoma) or newer (jkit 0.4.0 and earlier: macOS 15) |
-| Windows x64 (preview) | The Microsoft Visual C++ runtime: winget installs the Redistributable, and the `.zip` carries its DLLs (from 0.5.0) |
+| Windows x64 (preview) | The Microsoft Visual C++ runtime: the `.msi` installs its DLLs, the `.zip` carries them (from 0.5.0), and winget installs the Redistributable |
 
 Pre-releases (versions with a hyphen) are on the
 [releases page](https://github.com/adriandeleon/jkit/releases) only, not in Homebrew, apt or
-winget.
+winget. A pre-release `.msi` installs as its release version (0.7.0-rc.1 as 0.7.0), and the
+release's `.msi` then replaces it.
 
 ## Verify a download
 
@@ -136,13 +147,13 @@ from the same release, then run the steps below in that folder. With the
 [GitHub CLI](https://cli.github.com), one command gets all three:
 
 ```bash
-gh release download v0.5.0 --repo adriandeleon/jkit -p SHA256SUMS -p SHA256SUMS.asc -p 'jkit-0.5.0-linux-x64.tar.gz'
+gh release download v0.6.0 --repo adriandeleon/jkit -p SHA256SUMS -p SHA256SUMS.asc -p 'jkit-0.6.0-linux-x64.tar.gz'
 ```
 
 1. Import jkit's release key, `jkit-release.asc` from jkit's repository, once:
 
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/adriandeleon/jkit/v0.5.0/jkit-core/src/main/resources/dev/jkit/core/keys/jkit-release.asc | gpg --import
+   curl -fsSL https://raw.githubusercontent.com/adriandeleon/jkit/v0.6.0/jkit-core/src/main/resources/dev/jkit/core/keys/jkit-release.asc | gpg --import
    ```
 
 2. Check that `SHA256SUMS` is signed by it, as `jkit self-update` does:
@@ -292,7 +303,7 @@ it looks like this:
 
 ```console
 $ jkit doctor
-ok    jkit 0.5.0, linux-x64, home ~/.jkit
+ok    jkit 0.6.0, linux-x64, home ~/.jkit
 info  ~/.jkit doesn't exist yet; the first install creates it
 ok    shell hook loaded (bash)
 ok    jkit on PATH: /usr/bin/jkit

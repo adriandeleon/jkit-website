@@ -96,4 +96,4 @@ first one that mentions a tool decides it. `jdk = 21` as a TOML number in `jkit.
 `use … --global` adds `changed`, `prune` lists builds a running program uses as `inUse`, and PATH
 changes can be a `move`. [More](/reference/json/)
 
-All changes are in [What's new](/whats-new/#050).
+All changes are in [What's new](/whats-new/0.5/#050).

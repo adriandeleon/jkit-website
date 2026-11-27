@@ -1,12 +1,12 @@
 ---
 title: jkit self-update
-description: Update jkit itself to the newest release, or print the upgrade command when Homebrew, apt, dnf or winget installed it.
+description: Update jkit itself to the newest release, or print the upgrade command when Homebrew, apt, dnf, winget or the Windows .msi installed it.
 sidebar:
   order: 17
 ---
 
 Updates jkit itself to the newest release. A jkit from Homebrew, apt, dnf or winget is updated by
-that tool, and this tells you the command.
+that tool, and one from the Windows `.msi` by a newer `.msi`; this tells you the command.
 
 ## Usage
 
@@ -28,6 +28,7 @@ jkit self-update [-hV] [--check] [--json]
    | a `.deb` installed from a file | `/usr/bin/jkit`, dpkg lists the `jkit` package, no Vitrina repository | `d=$(mktemp -d) && curl -fLo "$d/<file>" <URL> && echo '<sha256>  '"$d/<file>" \| sha256sum -c - && sudo apt install "$d/<file>"` |
    | dnf (`.rpm`) | `/usr/bin/jkit` on a system with an rpm database | the same, ending in `sudo dnf install "$d/<file>"` |
    | winget | the binary is in winget's `Packages` folder | `winget upgrade AdrianDeLeon.jkit` |
+   | the Windows `.msi` | `INSTALLER.txt`, which the `.msi` installs, is next to `jkit.exe`; just for you if that's in your `AppData`, else for all users | a PowerShell command: `$f = "$env:TEMP\<file>"; Invoke-WebRequest -UseBasicParsing -OutFile $f <URL>; if ((Get-FileHash $f).Hash -eq '<sha256>') { msiexec /i $f /passive \| Out-Null } else { Write-Error … }`, with `ALLUSERS=1` after `/passive` for an all-users install |
    | a release archive | anything else | jkit replaces itself |
 
 3. **If it's already the newest**, it says so.
@@ -35,7 +36,10 @@ jkit self-update [-hV] [--check] [--json]
    `.rpm` or a `.deb` installed from a file, it first checks the release's `SHA256SUMS.asc`, and the
    command it prints downloads the package into a private `mktemp -d` folder and checks it against
    that signed `SHA256SUMS` before `sudo dnf install` or `sudo apt install`, since dnf and apt
-   don't check the signature of a package given as a file or URL.
+   don't check the signature of a package given as a file or URL. The `.msi` gets the same
+   check: the PowerShell command runs `msiexec` only if `Get-FileHash` matches the signed
+   `SHA256SUMS`, and installs for the same users the `.msi` was installed for, since Windows
+   Installer upgrades an install only for the same users.
 5. **For a copy from a release archive**, it:
    1. checks that `SHA256SUMS` is signed by jkit's release key, built into jkit, using the
       release's `SHA256SUMS.asc`; a release without a good signature is refused, and nothing
@@ -90,12 +94,13 @@ What you see:
 
 | Case | Output |
 | --- | --- |
-| Up to date | `jkit 0.5.0 is the newest release` |
-| Ahead of the newest release (a pre-release or development build) | `jkit 0.6.0-rc.1 is up to date: the newest release is 0.5.0` |
-| The newest is a pre-release, this isn't one | `jkit 0.5.0 is up to date: the newest release, 0.6.0-rc.1, is a pre-release, which self-update installs only over a pre-release` |
-| `--check`, newer out | `jkit 0.5.1 is out (this is 0.5.0)`, then the command that updates it |
-| Package manager | `jkit 0.5.1 is out (this is 0.5.0); jkit came from Homebrew, so update it there:` and the command |
-| Release archive | `updated jkit 0.5.0 → 0.5.1 at ~/.local/bin/jkit`, and the file changed |
+| Up to date | `jkit 0.6.0 is the newest release` |
+| Ahead of the newest release (a pre-release or development build) | `jkit 0.7.0-rc.1 is up to date: the newest release is 0.6.0` |
+| The newest is a pre-release, this isn't one | `jkit 0.6.0 is up to date: the newest release, 0.7.0-rc.1, is a pre-release, which self-update installs only over a pre-release` |
+| `--check`, newer out | `jkit 0.6.1 is out (this is 0.6.0)`, then the command that updates it |
+| Package manager | `jkit 0.6.1 is out (this is 0.6.0); jkit came from Homebrew, so update it there:` and the command |
+| The Windows `.msi` | `jkit 0.6.1 is out (this is 0.6.0); jkit came from the .msi, just for you, so a newer .msi updates it (in PowerShell):` and the command (`for all users` for an all-users install) |
+| Release archive | `updated jkit 0.6.0 → 0.6.1 at ~/.local/bin/jkit`, and the file changed |
 
 ## Exit codes
 

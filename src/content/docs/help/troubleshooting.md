@@ -40,7 +40,7 @@ GitHub can be reached.
 
 ```console
 $ jkit doctor
-ok    jkit 0.5.0, linux-x64, home ~/.jkit
+ok    jkit 0.6.0, linux-x64, home ~/.jkit
 warn  shell hook not loaded: jkit use can't change this shell, and the global versions aren't on PATH
       fix: jkit hook --install, then open a new shell
 ok    jkit on PATH: /usr/bin/jkit
@@ -513,6 +513,9 @@ The jkit binary itself isn't on `PATH`.
 - **Homebrew**: open a new terminal; check that `brew --prefix` + `/bin` is on `PATH`.
 - **`.deb` or `.rpm`**: the package installs to `/usr/bin`, which is always on `PATH`. Check the
   install finished (`dpkg -L jkit` or `rpm -ql jkit`).
+- **The Windows `.msi`**: it puts jkit's folder on your user `PATH` (just for you) or the system
+  `PATH` (all users). Programs started before the install, terminals included, keep the old
+  `PATH`: open a new one.
 - **`.tar.gz` or `.zip`**: you choose where `jkit` goes. Put it in a folder on `PATH`, such as
   `~/.local/bin`, or add its folder to `PATH` in your startup file. In bash, `hash -r` makes an
   open shell look again.
@@ -554,7 +557,8 @@ Don't turn Gatekeeper off for jkit. If an official build is blocked on macOS 14 
 
 ## Windows: `jkit.exe` won't start
 
-`jkit.exe` needs the Microsoft Visual C++ runtime. winget installs the Visual C++ Redistributable
+`jkit.exe` needs the Microsoft Visual C++ runtime. The `.msi` installs its two DLLs next to
+`jkit.exe`. winget installs the Visual C++ Redistributable
 (2015 or newer, x64) along with jkit. From 0.5.0 the `.zip` carries the runtime's two DLLs,
 `vcruntime140.dll` and `vcruntime140_1.dll`, next to `jkit.exe`: keep them next to it. If Windows
 reports a missing DLL or jkit exits without output (with the `.zip` of 0.4.0 or earlier, or with

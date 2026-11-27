@@ -38,7 +38,7 @@ Each release has an archive per platform and a `SHA256SUMS` file. The archive na
 `jkit`, `LICENSE` and `THIRD-PARTY-NOTICES`.
 
 ```bash
-JKIT_VERSION=0.5.0
+JKIT_VERSION=0.6.0
 base=https://github.com/adriandeleon/jkit/releases/download/v$JKIT_VERSION
 curl -fsSLO "$base/jkit-$JKIT_VERSION-linux-x64.tar.gz"
 curl -fsSLO "$base/SHA256SUMS"
@@ -68,7 +68,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      JKIT_VERSION: 0.5.0
+      JKIT_VERSION: 0.6.0
     steps:
       - uses: actions/checkout@v4
 
@@ -122,7 +122,7 @@ Within a single step, `eval "$(jkit env)"` does the same for the rest of that st
 build:
   image: ubuntu:24.04
   variables:
-    JKIT_VERSION: "0.5.0"
+    JKIT_VERSION: "0.6.0"
     JKIT_HOME: "$CI_PROJECT_DIR/.jkit-home"
     FF_DISABLE_UMASK_FOR_DOCKER_EXECUTOR: "true"   # see below
   cache:
