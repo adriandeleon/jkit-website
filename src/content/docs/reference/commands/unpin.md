@@ -18,7 +18,7 @@ jkit unpin [-hV] [--here] [--json] <tool>
 
 It finds the same file [`jkit pin`](/reference/commands/pin/) would edit (the `jkit.toml` here or
 above, `--here` for this folder's, or `JKIT_PROJECT_FILE`), and removes the tool's line, keeping
-everything else. A line jkit skipped when reading (a version it can't use) is removed too.
+everything else, the file's line endings included. A line jkit skipped when reading (a version it can't use) is removed too.
 
 With the shell hook loaded, it then applies the project again, so this shell's version of that
 tool goes back to its `jkit use` choice or the global default. Without the hook it says the shell

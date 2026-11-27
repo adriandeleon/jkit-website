@@ -11,7 +11,7 @@ applies again. With `--global`, clears the global default instead.
 ## Usage
 
 ```text
-jkit reset [-hV] [--global] <tool>
+jkit reset [-hV] [--global] [--json] <tool>
 ```
 
 ## What it does
@@ -23,11 +23,16 @@ It drops this shell's own choice for the tool (`JKIT_SHELL_<TOOL>`), and sets th
 
 1. the project's install, if a project file here still pins the tool and an earlier
    `jkit sync` (or the `cd` hook) applied it to this shell;
-2. otherwise the global default, `~/.jkit/global/<tool>`;
-3. otherwise nothing: the variable is unset.
+2. otherwise a `*_HOME` you set yourself before jkit's choice replaced it (jkit kept it in
+   `JKIT_USER_<TOOL>`), with its `bin` first on `PATH`;
+3. otherwise the global default, `~/.jkit/global/<tool>`;
+4. otherwise nothing: the variable is unset.
+
+The `bin` folder that comes back is moved to the front of `PATH`, and jkit says so.
 
 Like `jkit use`, it needs the [shell hook](/reference/shell-hook/); without it, it refuses with
-exit code 1. If the shell had no choice of its own for the tool, it says `nothing changed`.
+exit code 1. If the shell had no choice of its own for the tool (from `jkit use` or a project), it
+says `nothing to reset` and changes nothing; a `JAVA_HOME` you set yourself stays as it is.
 
 ### With `--global`
 
@@ -44,10 +49,9 @@ another version.
 | --- | --- |
 | `<tool>` | `jdk`, `graalvm`, `maven`, `gradle` or `sbt`. No version. |
 | `--global` | Clear the global default; installs stay. |
+| `--json` | Print one JSON document on stdout instead of text. |
 | `-h`, `--help` | Show help and exit. |
 | `-V`, `--version` | Print jkit's version and exit. |
-
-`jkit reset` has no `--json` option.
 
 ## Examples
 
@@ -69,6 +73,22 @@ $ jkit reset maven --global
 no global maven to clear
 ```
 
+Nothing of jkit's to take away:
+
+```console
+$ jkit reset jdk
+nothing to reset: this shell has no jdk from jkit use or a project
+  JAVA_HOME stays as you set it: /opt/jdk-21
+```
+
+With no tool named, it lists them:
+
+```console
+$ jkit reset
+error: name a tool: jkit reset jdk
+  tools: jdk, maven, gradle, sbt, graalvm
+```
+
 ## Exit codes
 
 | Code | When |
@@ -76,6 +96,12 @@ no global maven to clear
 | `0` | Reset, or nothing to reset. |
 | `1` | Without `--global`: the shell hook isn't active. |
 | `2` | Unknown tool, or a missing tool name. |
+
+## JSON
+
+`--json` prints the `scope` (`global` or `shell`), the `tool`, `changed` (false when there was
+nothing to reset), `changes` and `notes`; the text lines go to stderr. See
+[`jkit reset` in JSON output](/reference/json/#jkit-reset).
 
 ## See also
 

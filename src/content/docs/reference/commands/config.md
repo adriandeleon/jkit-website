@@ -62,7 +62,10 @@ that key is set, jkit warns that it wins over the file.
 so they can repair it; a file that isn't TOML at all is still refused.
 
 Changing `jdk.vendor` never changes installed JDKs or your global default; it changes what
-`jdk@…` means from now on. Changing `shell.auto_switch` takes effect in new shells.
+`jdk@…` means from now on. Changing `shell.auto_switch` takes effect in new shells; to stop
+switching in a shell that's already open, `export JKIT_AUTO_SWITCH=0`. PowerShell's hook can't
+switch on `cd` yet, so there `set shell.auto_switch true` says it changes nothing and that
+`jkit sync` applies a project's versions.
 
 ### `unset <key>`
 
@@ -116,8 +119,8 @@ jkit config set shell.auto_switch true    # same as jkit hook --install --auto-s
 | Code | When |
 | --- | --- |
 | `0` | Shown or changed, or nothing to change. |
-| `1` | An unknown key, a value it doesn't accept (a non-GraalVM vendor for `graalvm.vendor`, a switch that isn't on or off), or a `config.toml` it can't read or write. |
-| `2` | A vendor foojay doesn't know, a missing key or value, or an unknown subcommand. |
+| `1` | A `config.toml` it can't read or write. |
+| `2` | A bad argument: an unknown key, a value it doesn't accept (a vendor foojay doesn't know, a non-GraalVM vendor for `graalvm.vendor`, a switch that isn't on or off), a missing key or value, or an unknown subcommand. |
 
 ```console
 $ jkit config set shell.auto_switch maybe

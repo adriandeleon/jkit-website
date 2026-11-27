@@ -25,7 +25,8 @@ jkit remove [-hV] [--all] [--force] [--fx] [--json] <tool>@<version>
    - a global link points at (`~/.jkit/global/<tool>`), or
    - this shell chose with `jkit use`.
 
-   `--force` removes it anyway, along with its global link.
+   The refusal says what uses the build ("the global maven", "this shell's jdk (chosen with
+   jkit use)"). `--force` removes it anyway, along with its global link when there is one.
 4. **Removes each one**: it moves the folder out of `tools/` in one step, deletes it, and removes
    any global link that pointed at it.
 
@@ -34,7 +35,8 @@ again) or when this shell still points at it from a project. A build in use else
 shell, another project) isn't detected; that shell keeps a `JAVA_HOME` that no longer exists until
 you `jkit reset` or `jkit sync` there.
 
-If an install or another removal is running, it waits for it.
+It doesn't wait for another jkit's download: the install lock is held only while `tools/`
+changes, so it waits at most for another jkit that is changing `tools/` at that moment.
 
 ## Options
 
@@ -61,10 +63,10 @@ When it's the global default:
 
 ```console
 $ jkit remove jdk@17 zulu
-error: jdk 17.0.21.1+2 zulu is global; nothing removed
+error: jdk 17.0.21.1+2 zulu is the global jdk; nothing removed
   make another version the default first: jkit use jdk@<version> --global
   or clear the default: jkit reset jdk --global
-  or remove it anyway (the link goes too): add --force
+  or remove it anyway (the global link goes too): add --force
 ```
 
 When several builds match:

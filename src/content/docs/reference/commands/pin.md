@@ -22,11 +22,12 @@ jkit pin [-hV] [--exact] [--fx] [--here] [--json] [--offline]
    here. If `JKIT_PROJECT_FILE` is set, it edits (or creates) that file.
 2. **Checks the version exists.** It must match an install or something the tool's source offers,
    so a typo fails now and not on a teammate's machine. That check may go online (cached 24 hours).
-3. **Writes the line**, keeping the file's comments, order and other tools. A new file starts with
+3. **Writes the line**, keeping the file's comments, order, line endings and other tools. A new file starts with
    a comment and a `[tools]` table. The line is the short form (`jdk = "21"`), or the long form
    (`jdk = { version = "21", vendor = "zulu", fx = true }`) when the pin has a vendor or JavaFX.
 4. **Applies it to this shell** if the shell hook is loaded, as `jkit sync` would for installed
-   versions. Without the hook it says the shell is unchanged.
+   versions, and suggests `jkit config set shell.auto_switch true` for switching on `cd` (not in
+   PowerShell, whose hook can't do that yet). Without the hook it says the shell is unchanged.
 
 What gets written:
 
@@ -40,6 +41,7 @@ What gets written:
 | `jkit pin maven` | The Maven this shell uses, in full: `maven = "3.9.16"` |
 | `jkit pin jdk@latest` | `jdk = "latest"`: always the newest |
 | `jkit pin jdk@lts` | The current LTS release as a number: `jdk = "25"` |
+| `jkit pin jdk@lts zulu` | That vendor's newest LTS release: `jdk = { version = "25", vendor = "zulu" }` |
 
 Without a version, `jkit pin` pins what this shell uses (its `*_HOME`, or else what jkit would
 pick here); for `jdk` and `graalvm` that is the feature release, for the build tools the full

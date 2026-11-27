@@ -13,6 +13,7 @@ every code and what causes it.
 | `2` | Bad arguments: the command line itself is wrong. |
 | `3` | The version you asked for isn't installed. |
 | `126`, `127`, other | [`jkit exec`](#jkit-exec) only: the command's own exit code, or why it couldn't start. |
+| `129`, `130`, `143` | jkit was stopped by SIGHUP, Ctrl-C (SIGINT) or SIGTERM. See [Signals](#signals). |
 
 Every failure prints `error: <message>` on stderr, then indented hint lines with commands to try:
 
@@ -43,10 +44,11 @@ Anything that isn't a bad argument or a missing install, for example:
 - `jkit remove` refused because the build is global or chosen in this shell (without `--force`),
   or the version matches several builds (without `--all`).
 - `jkit use` or `jkit reset` without `--global`, when the shell hook isn't active.
-- `jkit sync` found no project file, or a project file is broken.
+- `jkit sync` found no project file, a project file is broken, or it pins a tool jkit can't read
+  (`maven = 3.10`, which TOML reads as 3.1): sync then installs nothing.
 - `jkit upgrade` failed on at least one release line (the other lines still ran).
 - `jkit doctor` found a check that failed (see [below](#jkit-doctor)).
-- `jkit config` was given an unknown key or a value it doesn't accept.
+- `jkit config` couldn't read or write `config.toml`.
 - The jkit home is unsafe (another user could write to it) or can't be written.
 - `jkit self-update` couldn't download, check or replace the binary.
 
@@ -64,6 +66,9 @@ The command line is wrong; nothing was attempted.
 - An unknown shell: `jkit env --shell tcsh`, `jkit completion fish`.
 - `jkit exec` without `--`, with nothing after `--`, or with a word before `--` that is neither a
   tool nor a vendor.
+- No tool named: `jkit reset` says to name one and lists the tools.
+- Any bad `jkit config set` argument: an unknown key, or a value it doesn't accept
+  (`jkit config set shell.auto_switch maybe`, a vendor foojay doesn't know).
 
 ```console
 $ jkit instal jdk
@@ -119,8 +124,25 @@ Ctrl-C goes to the command, not to jkit, so a REPL keeps running and its exit co
 To stop the command from another process, send jkit SIGTERM (or SIGHUP): jkit passes SIGTERM on,
 waits for the command, and exits with its code; a second SIGTERM kills it.
 
+When a Ctrl-C reached both jkit and the command and the command died from it, jkit ends from
+SIGINT too, so a script running `jkit exec` stops as it would without jkit. A command that only
+exits 129, 130 or 143 passes that code on.
+
 The shell hook's `jkit` function returns jkit's exit code unchanged, or `127` with
 `jkit: not found on PATH` when it can't find the jkit binary.
+
+## Signals
+
+Ctrl-C, SIGTERM or SIGHUP during an install or `jkit self-update` deletes the partial download and
+says so; nothing half-installed is left.
+
+| Signal | Exit |
+| --- | --- |
+| Ctrl-C (SIGINT) | jkit ends from SIGINT itself, as a program without a handler does, so a shell script running jkit stops too. A shell shows `130`; a program that started jkit (Node, Python) sees a death by signal, not exit code 130. On Windows, and as a container's PID 1, jkit exits `130`. |
+| SIGTERM | `143` |
+| SIGHUP | `129` |
+
+A SIGINT the shell set to be ignored (a background job) stays ignored.
 
 ## `jkit doctor`
 

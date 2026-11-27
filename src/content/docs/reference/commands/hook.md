@@ -43,11 +43,19 @@ shell's startup file:
 | fish | `$XDG_CONFIG_HOME/fish/conf.d/jkit.fish`, else `~/.config/fish/conf.d/jkit.fish` |
 
 Without a shell name it uses your login shell, from `$SHELL`. It prints the exact lines it wrote.
-It does nothing to the file if the block is already there, or if another line already loads the
-hook. PowerShell isn't supported yet: add `jkit hook pwsh | Out-String | Invoke-Expression` to
-your `$PROFILE` by hand (Windows PowerShell 5.1 loads it only after
+It does nothing to the file if the block is already there (also when it's indented or has trailing
+spaces), or if another line already loads the hook. A block whose `# <<< jkit <<<` end marker is
+missing, or a stray `# >>> jkit >>>` before jkit's block, is an error: jkit says which line starts
+it and changes nothing. The block is always written with LF line endings, also in a startup file
+with Windows (CRLF) ones.
+
+`--install` doesn't edit PowerShell's profile: add
+`jkit hook pwsh | Out-String | Invoke-Expression` to your `$PROFILE` by hand (Windows PowerShell 5.1 loads it only after
 `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`; see [Windows](/guides/windows/#load-the-hook-in-powershell)). See [`jkit hook --install`](/reference/shell-hook/#jkit-hook---install)
 for every rule it follows.
+
+On Windows, `--install` edits no startup file at all: it fails with the PowerShell `$PROFILE` line
+as the hint, and writes no block for Git Bash (whose `$SHELL` is bash), which has no jkit hook.
 
 ### `--auto-switch`
 
@@ -57,15 +65,16 @@ the setting changes. `JKIT_AUTO_SWITCH=1` does the same without the file.
 
 ### `--uninstall`
 
-Takes out what `--install` added to the startup file, and nothing else. It deletes the file only if
-jkit created it and nothing else is in it. It doesn't change `auto_switch` in `config.toml`. Open
-shells keep the hook until they exit.
+Takes out what `--install` added to the startup file, and nothing else: every other byte stays as
+it was. It deletes the file only if jkit created it and nothing else is in it. It refuses, changing
+nothing, in the same two cases. It doesn't change `auto_switch` in `config.toml`. Open shells keep the hook until
+they exit. On Windows, `jkit hook bash --uninstall` takes out a Git Bash block an older jkit added.
 
 ## Options
 
 | Option | Description |
 | --- | --- |
-| `<shell>` | `bash`, `zsh`, `fish` or `pwsh` (`powershell` works too). On Windows only `pwsh` and `powershell` are accepted. With `--install` or `--uninstall`, defaults to your login shell (`$SHELL`); otherwise `bash` (`pwsh` on Windows). |
+| `<shell>` | `bash`, `zsh`, `fish` or `pwsh` (`powershell` works too). On Windows, printing the hook accepts only `pwsh` and `powershell`, and `--uninstall` also takes `bash`, `zsh` or `fish` to remove a block an older jkit added. With `--install` or `--uninstall`, defaults to your login shell (`$SHELL`); otherwise `bash` (`pwsh` on Windows). |
 | `--install` | Add the hook to the shell's startup file. Does nothing if it's already there. |
 | `--uninstall` | Take out what `--install` added. |
 | `--auto-switch` | With `--install`: also turn on switching to a project's versions on `cd`. |
@@ -123,7 +132,7 @@ jkit hook fish --install
 | Code | When |
 | --- | --- |
 | `0` | Printed, added, removed, or already there. |
-| `1` | An unsupported shell (`jkit hook tcsh`), `$SHELL` isn't bash, zsh or fish and no shell was named, `--install` for PowerShell, `--auto-switch` without `--install`, or the startup file couldn't be written. |
+| `1` | An unsupported shell (`jkit hook tcsh`), `$SHELL` isn't bash, zsh or fish and no shell was named, `--install` for PowerShell or on Windows, `--auto-switch` without `--install`, a block with no end marker or a stray `# >>> jkit >>>` before it, or the startup file couldn't be written. |
 | `2` | `--install` with `--uninstall`, or an unknown option. |
 
 A broken `config.toml` only prints a warning, so new shells still get the hook.

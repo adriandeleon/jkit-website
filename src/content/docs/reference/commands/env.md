@@ -6,12 +6,15 @@ sidebar:
 ---
 
 Prints the environment for a new process here: the global versions, overridden by the project
-file. It never uses the network and never changes anything.
+file. It never uses the network and, except for `--install` and `--uninstall` on Windows, never
+changes anything.
 
 ## Usage
 
 ```text
 jkit env [-hV] [--json] [--no-project] [--dir=<path>] [--shell=<shell>]
+jkit env --install [--json]      # Windows
+jkit env --uninstall [--json]    # Windows
 ```
 
 ## What it does
@@ -67,6 +70,25 @@ bash.
 
 Values are single-quoted, so paths with spaces are safe to `eval`.
 
+### Windows: the user environment
+
+On Windows, `jkit env --install` (run once) sets `JAVA_HOME` and the other `*_HOME` variables in
+your user environment to jkit's global links, and puts their `bin` folders first on your user
+`PATH`. Then cmd.exe, IDEs and programs started from Explorer get the global versions too, not
+only a hooked PowerShell, and a later `jkit use … --global` reaches new programs with no further
+change. Each change is printed, a value it replaces included; the rest of `PATH` stays exactly as
+it was, `%VAR%`s and all. Programs already running, this shell included, keep what they have.
+
+A `*_HOME` of your own that it replaces is kept in `JKIT_SAVED_<TOOL>` (`JKIT_SAVED_JDK`, …); a
+value it replaces that is one of jkit's own installs isn't kept. `jkit env --uninstall` removes only
+what `--install` set and puts your saved value back, unless that folder no longer exists, which it
+says.
+
+Windows puts the system `PATH` before the user `PATH`, so a `java` in the system `PATH` still comes
+first; [`jkit doctor`](/reference/commands/doctor/) says whether `--install` is set up and warns
+about such a `java`. On macOS and Linux, `--install` and `--uninstall` are an error: the shell's
+startup file is the place, with [`jkit hook --install`](/reference/commands/hook/).
+
 ## Options
 
 | Option | Description |
@@ -74,6 +96,8 @@ Values are single-quoted, so paths with spaces are safe to `eval`.
 | `--shell=<shell>` | Syntax: `bash` (default), `zsh`, `fish`, `pwsh` or `powershell` (Windows PowerShell 5.1). |
 | `--dir=<path>` | The folder to look for a project file from (default: here). |
 | `--no-project` | Ignore project files; global versions only. |
+| `--install` | Windows: put the global versions in your user environment. |
+| `--uninstall` | Windows: take out what `--install` put there. |
 | `--json` | Print one JSON document on stdout instead of shell code. |
 | `-h`, `--help` | Show help and exit. |
 | `-V`, `--version` | Print jkit's version and exit. |
@@ -119,14 +143,15 @@ error: jkit.toml wants jdk 25, not installed
 | Code | When |
 | --- | --- |
 | `0` | Printed (or nothing to set). |
-| `1` | The project file is broken, or `--dir` isn't a folder. |
+| `1` | The project file is broken, or `--dir` isn't a folder; `--install` or `--uninstall` on macOS or Linux. |
 | `2` | Unknown `--shell`. |
 | `3` | The project file pins a version that isn't installed. |
 
 ## JSON
 
 `--json` prints `variables`, `pathPrepend` (the folders to put first on `PATH`), the whole `path`
-and the project file. See [`jkit env` in JSON output](/reference/json/#jkit-env).
+and the project file. With `--install` or `--uninstall` it prints the changes made to the user
+environment instead. See [`jkit env` in JSON output](/reference/json/#jkit-env).
 
 ## See also
 

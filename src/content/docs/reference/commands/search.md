@@ -32,14 +32,23 @@ What it shows depends on the arguments:
 | `jkit search maven` (or `gradle`, `sbt`) | Every version, grouped by minor release, up to 8 per line |
 | `jkit search maven@3.9` | Only the versions that match |
 
-`graalvm` works like `jdk`, limited to GraalVM-based vendors. Versions you have installed are
-marked `●`. `@lts` is replaced by the newest LTS release.
+`graalvm` works like `jdk`, limited to GraalVM-based vendors. Mandrel builds are listed one by
+one as `<java>+<mandrel>` (`graalvm@21 mandrel` gives `21+23.1.13`, `21+23.1.12.1`, …). Versions
+you have installed are marked `●`. `@lts` is replaced by the newest LTS release; with a vendor
+(`jkit search jdk@lts zulu`), that vendor's newest LTS release.
 
 Each listed JDK build is looked up the way `jkit install` would (cached for 24 hours, like the
 version lists), so the table only promises what install will do:
 
 - `○` marks a build with no published checksum and no signature jkit checks. `jkit install`
-  refuses it unless you pass `--allow-unverified`.
+  refuses it unless you pass `--allow-unverified`. Corretto's 2019 builds (8u222, 8u232, 11.0.4,
+  11.0.5), signed with Amazon's since-retired keys, are marked `○` too.
+- `↓ behind` marks a vendor's newest build of a release when the vendor stopped updating it: it is
+  two or more updates behind the newest update at least two vendors have (for JDK 8, two quarterly
+  releases), as with openjdk (jdk.java.net) and GraalVM CE, which publish only the first updates of
+  each release. `jkit search jdk@21` says where the newest is (`↓ behind: newest 21 is 21.0.13.1+5`).
+  Only OpenJDK update numbers count: GraalVM distributions' own release numbers (Gluon 21.2,
+  GraalVM CE 25.4) don't.
 - A blank cell (or `no direct download` for `jdk@21`) means foojay lists the release but has no
   build jkit can download, such as Oracle 11.
 
@@ -52,6 +61,16 @@ first row, marked `*`.
 
 A vendor name is checked against foojay's list first, so a typo gets a suggestion instead of an
 empty result (exit code 2).
+
+When nothing matches, it says so and what to search for instead (`no jdk build matches
+jdk@21.0.99`, then `jkit search jdk lists the versions there are`). When only pre-releases match,
+it says to add `--pre`:
+
+```console
+$ jkit search maven@4
+no maven version matches maven@4
+only pre-releases match maven@4: add --pre
+```
 
 ## Options
 
@@ -81,26 +100,26 @@ temurin *          ✓  ✓  ✓  ✓  ✓ ✓
 bisheng               ○  ○  ○  ○ ○
 corretto           ✓  ✓  ✓  ✓  ✓ ✓
 dragonwell            ○  ○  ○  ○ ○
-eliya                 ✓
+eliya                 ↓
 gluon-graalvm            ○
-graalvm               ✓  ✓  ✓
-graalvm-ce            ✓  ✓  ✓
-jetbrains             ✓  ✓  ✓  ○
+graalvm               ✓  ✓  ↓
+graalvm-ce            ✓  ↓  ↓
+jetbrains             ✓  ↓  ↓  ○
 kona                  ✓  ✓  ✓  ○ ✓
 liberica           ✓  ✓  ✓  ✓  ✓ ✓
-liberica-nik          ✓  ✓  ✓  ✓
+liberica-nik          ✓  ✓  ✓  ↓
 mandrel               ✓  ✓  ○  ○
 microsoft             ✓  ✓  ✓  ✓
-openjdk            ✓  ✓  ✓  ✓  ○ ○
+openjdk            ✓  ↓  ↓  ↓  ○ ○
 openlogic             ○  ○  ○  ○ ○
 oracle             ✓  ✓  ✓  ✓
-sapmachine         ✓  ✓  ✓  ✓  ✓
-semeru             ✓  ✓  ✓  ✓  ✓ ✓
+sapmachine         ✓  ✓  ✓  ✓  ↓
+semeru             ✓  ✓  ✓  ✓  ✓ ↓
 semeru-certified      ✓  ✓  ✓  ✓
 trava                          ○ ○
 zulu               ✓  ✓  ✓  ✓  ✓ ✓ ✓
 
-✓ available   ○ no checksum (needs --allow-unverified)   ● installed   ‾‾ LTS   * default vendor
+✓ available   ○ no checksum (needs --allow-unverified)   ↓ behind (the vendor stopped updating it)   ● installed   ‾‾ LTS   * default vendor
 versions per vendor: jkit search jdk@<major>
 ```
 
@@ -112,10 +131,13 @@ bisheng          21.0.12+15  ○ no checksum
 corretto         21.0.13.1+2
 dragonwell       21.0.13.1  ○ no checksum
 …
+openjdk          21.0.2+13  ↓ behind: newest 21 is 21.0.13.1+5
+…
 temurin *        21.0.13.1+2
 zulu             21.0.13.1+2
 * default vendor   ● installed   · all builds of one vendor: jkit search jdk@21 <vendor>
 ○ no published checksum: install refuses it unless --allow-unverified
+↓ behind: the vendor stopped updating this release; other vendors have newer builds
 $ jkit search jdk@21 zulu
 21.0.13.1+2
 21.0.13+9
@@ -151,13 +173,14 @@ jkit search jdk@21 --json            # for a program
 
 | Code | When |
 | --- | --- |
-| `0` | The list was printed (even if empty). |
+| `0` | The list was printed, or nothing matched (it says so). |
 | `1` | The source couldn't be reached and nothing usable was cached, or `--offline` with nothing cached for this lookup. |
 | `2` | Unknown tool or vendor, a version that isn't one, or `@lts` on a build tool. |
 
 ## JSON
 
-`jkit search … --json` prints the tool, the vendor, the feature releases and the available builds.
+`jkit search … --json` prints the tool, the vendor, the feature releases and the available builds,
+each with `behind` set when its vendor stopped updating that release.
 See [`jkit search` in JSON output](/reference/json/#jkit-search).
 
 ## See also

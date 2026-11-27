@@ -62,14 +62,24 @@ maven    3.9.16                  global
 project: ~/src/app (jkit.toml)
 ```
 
-Without the hook:
+Without the hook (one line for every global version that isn't applied):
 
 ```console
 $ jkit status
 jdk      -                       not set
-         the global jdk isn't applied: the jkit hook isn't loaded: jkit hook --install, then open a new shell
 maven    -                       not set
-         the global maven isn't applied: the jkit hook isn't loaded: jkit hook --install, then open a new shell
+the global jdk, maven aren't applied: the jkit hook isn't loaded; load it in new shells: jkit hook --install
+```
+
+Without the hook, a pin that is installed doesn't send you to `jkit sync` (which needs the hook):
+
+```console
+$ jkit status
+jdk      -                       not set
+maven    -                       not set
+         jkit.toml wants maven 3.9.16; this shell has none and no jkit hook to switch it: run one command with it: jkit exec -- <command>, or load it in new shells: jkit hook --install
+project: ~/src/app (jkit.toml)
+the global jdk isn't applied: the jkit hook isn't loaded; load it in new shells: jkit hook --install
 ```
 
 A `JAVA_HOME` set outside jkit:
@@ -94,6 +104,7 @@ jdk      17.0.21.1+2 zulu        shell
 | --- | --- |
 | `<file> wants <tool> <version>; this shell has …: jkit sync` | Run `jkit sync` (or enable auto-switch). |
 | `<file> wants <tool> <version>, not installed: jkit sync` | `jkit sync` installs it. |
+| `<file> wants …; this shell has none and no jkit hook to switch it` | Run the command through `jkit exec`, or `jkit hook --install`. |
 | `… isn't applied: the jkit hook isn't loaded` | `jkit hook --install`, then open a new shell. |
 | `… isn't applied in this shell yet: open a new shell` | The hook is loaded, but this shell started before the default was set. |
 | `… is set outside jkit and wins over the global …` | Remove the export from your shell profile. |
