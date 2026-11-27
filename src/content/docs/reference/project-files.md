@@ -67,6 +67,18 @@ Setting the same tool twice (`jdk` and `java`) is an error. Keys aren't case-sen
 - **sbt** picks the launcher only: the sbt version a build runs on still comes from its
   `project/build.properties`.
 
+### Quote versions
+
+A version is a string. A whole number (`jdk = 21`, a TOML number) is read as `"21"` and pins
+JDK 21. A decimal is refused with a warning to quote it, since TOML has already made `maven = 3.10`
+into 3.1:
+
+```console
+warning: ~/src/app/jkit.toml:3: maven = 3.10 is a TOML number, which drops trailing zeros (3.10 reads as 3.1); quote it: maven = "3.10", skipped maven
+```
+
+A decimal inside a table (`version = 3.9` under `[tools.maven]`) is reported on its own line.
+
 ### What jkit tolerates
 
 A file written for a newer jkit, or edited by hand, still works. These give a warning naming the
@@ -74,14 +86,26 @@ file and line, and the rest of the file applies:
 
 - An unknown top-level key or table, or an unknown tool under `[tools]`.
 - An unknown field in a long-form entry (ignored; the entry still applies).
-- A value that isn't a string or a table, or a field of the wrong type (that tool is skipped).
-- A version that isn't one, such as `"twenty-one"` (skipped).
+- A value that isn't a string, a whole number or a table, or a field of the wrong type (that tool
+  is skipped).
+- A version that isn't one, such as `"twenty-one"`, or a decimal such as `3.10` (skipped).
 - A vendor on `maven`, `gradle` or `sbt`, or `fx` on them (ignored).
 - A `graalvm` vendor that isn't GraalVM-based (skipped).
 - Versions and vendors that aren't plain text. Versions may hold letters, digits and `. + _ -`,
   vendors letters, digits and `. _ -`, up to 64 characters; anything else is skipped.
 
 At most 20 warnings are shown per file. Broken TOML is an error, with the line number.
+
+A skipped pin doesn't fall back to anything: `jkit sync` fails, installing nothing, when a project
+file pins a tool it can't read (a malformed version, a decimal, an unknown SDKMAN suffix, …), so CI
+doesn't go on with the wrong JDK. An unknown tool or key only warns.
+
+```console
+$ jkit sync
+warning: ~/src/app/jkit.toml:3: maven = 3.10 is a TOML number, which drops trailing zeros (3.10 reads as 3.1); quote it: maven = "3.10", skipped maven
+error: jkit.toml pins maven, but jkit can't read that pin (see the warning above); nothing was installed
+  fix the entry in ~/src/app, then run jkit sync again
+```
 
 The file is read as UTF-8, or as UTF-16 when it starts with a byte-order mark (as PowerShell 5's
 `echo 21 > .java-version` writes).
@@ -94,19 +118,24 @@ The file is read as UTF-8, or as UTF-16 when it starts with a byte-order mark (a
 ## Other files jkit reads
 
 jkit reads these so existing repositories work unchanged, and never writes them. Several in one
-folder are read together, the earlier one in this list winning per tool. A `jkit.toml` (or
-`.jkit.toml`) in the same folder replaces all of them.
+folder are read together: the first file in this list that mentions a tool decides it, even when
+jkit can't read that entry (a later file doesn't stand in for it, and `jkit sync` fails). Within
+`.sdkmanrc` the last line for a tool decides, as `sdk env` runs `sdk use` for each line in turn;
+within `.tool-versions` the first one does, as in asdf. The other is ignored with a warning. Hints
+and warnings name the file that set each tool. A `jkit.toml` (or `.jkit.toml`) in the same folder
+replaces all of them.
 
 | File | Example | Notes |
 |---|---|---|
 | `.sdkmanrc` | `java=21.0.5-tem`, `maven=3.9.9` | SDKMAN's vendor suffixes map to jkit's vendors (`tem` temurin, `zulu`, `amzn` corretto, `librca` liberica, `ms` microsoft, `sapmchn` sapmachine, `sem` semeru, `graalce` graalvm-ce, `graal` graalvm, `nik` liberica-nik, `mandrel`, `oracle`, `open` openjdk, `kona`, `albba` dragonwell, `jbr` jetbrains, `trava`, `bsg` bisheng). `21.0.5.fx-zulu` means a JavaFX build. Other candidates are skipped with one warning. |
-| `.tool-versions` (asdf, mise) | `java temurin-21.0.5+11.0.LTS`, `maven 3.9.9` | asdf names map to jkit's (`adoptopenjdk` temurin, `graalvm-community` graalvm-ce, `oracle-graalvm` graalvm, `semeru-openj9` semeru). Only the first version on a line counts. `system`, `ref:` and `path:` are skipped. asdf's Zulu ids use Zulu's own numbering and don't match. |
-| `.java-version` | `21`, `17.0.2` | jdk only, any vendor; `1.8` reads as 8. |
+| `.tool-versions` (asdf, mise) | `java temurin-21.0.5+11.0.LTS`, `maven 3.9.9` | asdf names map to jkit's (`adoptopenjdk` temurin, `graalvm-community` graalvm-ce, `oracle-graalvm` graalvm, `semeru-openj9` semeru). Only the first version on a line counts. `system`, `ref:` and `path:` are skipped. See the details below for Corretto, Semeru, Mandrel, Zulu and JavaFX ids. |
+| `.java-version` | `21`, `17.0.2`, `temurin64-21.0.5` | jdk only; `1.8` reads as 8, and a plain number means any vendor. jEnv's names pin that vendor (see below). |
 
 Details per format:
 
 - **`.sdkmanrc`.** One `candidate=version` per line; `#` starts a comment. jkit reads the `java`,
-  `maven`, `gradle` and `sbt` candidates. A `java` id must end in a vendor suffix
+  `maven`, `gradle` and `sbt` candidates. When a candidate is set twice, the last line wins, as in
+  `sdk env`. A `java` id must end in a vendor suffix
   (`21.0.5-tem`); SDKMAN ids carry no build number, so the version is used as a prefix.
   Early-access ids (`26.ea.20-open`) read as `26-ea+20`. Old GraalVM and Mandrel ids that name the
   distribution release (`22.3.r17-grl`) are skipped with a warning. A GraalVM `java` id stays a
@@ -115,8 +144,26 @@ Details per format:
   `gradle` and `sbt`, and other tools are skipped with one warning. A `java` version is
   `<vendor>-<version>` (`temurin-21`, `graalvm-community-21`) or a plain number (`21`, any vendor).
   A `-javafx` or `-fx` suffix on the vendor asks for a JavaFX build. `latest` means the newest.
-- **`.java-version`.** The first line that isn't empty or a `#` comment. Only numbers such as `21`
-  or `17.0.2` are read; anything else is skipped with a warning.
+  When a tool is set twice, the first line wins, as in asdf. Vendor-specific ids:
+  - Corretto's own numbering reads as the Java version: `21.0.5.11.1` is 21.0.5, `8.432.06.1` is
+    8.0.432.
+  - Semeru's `_openj9-…` suffix is dropped.
+  - `mandrel-23.1.5.0-Final-java21` is Mandrel for Java 21.
+  - `-jre`, `-lite` and `-musl` builds are pinned as the vendor's full JDK, with a warning (the C
+    library follows the machine).
+  - A Zulu release number (`zulu-21.38.21`) pins only the major, with a warning: write the Java
+    version (`zulu-21.0.5`) to be exact.
+  - `semeru-certified` is pinned as open Semeru, with a warning.
+  - Old GraalVM release ids (`graalvm-22.3.0+java17`) are skipped.
+  - An unknown vendor is warned about as soon as the file is read; jkit then looks for a vendor of
+    that name.
+- **`.java-version`.** The first line that isn't empty or a `#` comment. Numbers such as `21` or
+  `17.0.2` pin that version from any vendor. jEnv's names (`<vendor>64-<version>`) pin that vendor,
+  read like `.tool-versions` ids: `temurin64-21.0.5` is Temurin 21.0.5, `corretto64-21` is
+  Corretto 21. `openjdk64-17.0.2` pins 17.0.2 from any vendor, since jEnv gives that name to any
+  build that only says OpenJDK. `oracle64-1.8.0.202` and other Oracle JDK 8 and 11 names are
+  skipped with a warning: Oracle offers those only after a sign-in, so jkit can't install them.
+  Anything else (`system`) is skipped with a warning.
 
 ## Which file applies
 
@@ -206,18 +253,31 @@ PowerShell doesn't switch on `cd` yet.
 - bash switches when the next prompt is drawn, so `cd app && java -version` on one line still runs
   the old JDK. In scripts and one-liners, use `jkit exec -- java -version` instead.
 - Editing the project file takes effect on the next `cd`, `jkit sync` or `jkit pin`.
-- A broken project file is reported once and leaves the shell's versions alone.
+- A broken project file is reported once and leaves the shell's versions alone. A file whose pins
+  jkit can't read (a `.java-version` saying `system`) is reported as "it pins nothing jkit can
+  read", with a pointer to `jkit status`, which says why.
+- A change to `auto_switch` in `config.toml` applies to new shells. To stop switching in a shell
+  that is already open, `export JKIT_AUTO_SWITCH=0` there (`set -gx JKIT_AUTO_SWITCH 0` in fish).
+- A `JAVA_HOME` (or other `*_HOME`) you set yourself is kept in `JKIT_USER_JDK` (`JKIT_USER_MAVEN`,
+  …) when a project or `jkit use` first replaces it, and comes back, with its `bin` first on
+  `PATH`, when neither applies any more (you leave the project, `jkit reset jdk`); jkit says so each
+  time. A `JAVA_HOME` you change by hand while a project's JDK applies is left as you set it.
+- Leaving a project, a tool with no global version is unset (`maven unset (no global maven)`), and
+  the `bin` that comes back moves to the front of `PATH` if it is further back
+  (`PATH   moved … ahead of …`).
 
 See [Shell hook](/reference/shell-hook/) for how this works.
 
 ## Commands
 
 - [`jkit pin <tool>[@version] [vendor] [--exact] [--here]`](/reference/commands/pin/) writes or
-  updates one line of the nearest `jkit.toml` (or creates one here with `--here`), keeping comments
-  and order. The version must be installed or downloadable. It won't edit `.sdkmanrc`,
+  updates one line of the nearest `jkit.toml` (or creates one here with `--here`), keeping comments,
+  order, line endings and the file's encoding (UTF-8 with or without a byte-order mark, UTF-16 with
+  one, or Latin-1). The file is written atomically, so an interrupted write never leaves half a
+  file; `jkit doctor` reports a `*.jkit-tmp` file one leaves behind. The version must be installed or downloadable. It won't edit `.sdkmanrc`,
   `.tool-versions` or `.java-version`. It writes the short form, or the long form when the pin has
   a vendor or `fx`.
-- [`jkit unpin <tool>`](/reference/commands/unpin/) removes that line.
+- [`jkit unpin <tool>`](/reference/commands/unpin/) removes that line, the same way.
 - [`jkit sync [--dry-run]`](/reference/commands/sync/) installs what the project asks for and
   switches this shell to it. A download with no published checksum is refused unless you add
   `--allow-unverified`.

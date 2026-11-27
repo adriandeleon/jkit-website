@@ -18,9 +18,14 @@ and AI agents usually go without it.
 
 1. **Marks the shell** by exporting `JKIT_SHELL` (`bash`, `zsh`, `fish` or `pwsh`).
 2. **Puts the global `bin` folders first on `PATH`:** `~/.jkit/global/jdk/bin`, then `maven`,
-   `gradle` and `sbt`. An entry already on `PATH` isn't added twice, so loading the hook again
-   (a nested shell, `source ~/.bashrc`) changes nothing. GraalVM's `bin` is never added, so there
-   is only one `java` on `PATH`.
+   `gradle` and `sbt`. An entry already on `PATH` isn't added twice: when it is there but further
+   back, it moves to the front. That matters where something else ran first and put `/usr/bin`
+   ahead of it: macOS's `path_helper` in a nested login zsh, or Windows, which puts the user `PATH`
+   (where `jkit env --install` puts jkit's folders) after the system one. Loading the hook again
+   (a nested shell, `source ~/.bashrc`) changes nothing. For a tool whose `*_HOME` you set
+   yourself, that home's `bin` goes first instead of the global one (see
+   [below](#a-java_home-you-set-yourself)). GraalVM's `bin` is never added, so there is only one
+   `java` on `PATH`.
 3. **Sets the `*_HOME` variables** to the global links: `JAVA_HOME=~/.jkit/global/jdk`,
    `MAVEN_HOME`, `GRADLE_HOME`, `SBT_HOME` and `GRAALVM_HOME` likewise. Each only when that
    global link exists and the variable isn't already set.
@@ -31,14 +36,27 @@ and AI agents usually go without it.
 Because the `*_HOME` variables and `PATH` point at the links in `~/.jkit/global/`, a
 `jkit use … --global` reaches every open shell without reloading anything.
 
-The start of the bash and zsh hook looks like this:
+The start of the bash and zsh hook looks like this (comments left out):
 
 ```bash
 # jkit shell hook (zsh)
 export JKIT_SHELL=zsh
 __jkit_g='/home/me/.jkit/global'
 for __jkit_t in sbt gradle maven jdk; do
-  case ":$PATH:" in *":$__jkit_g/$__jkit_t/bin:"*) ;; *) PATH="$__jkit_g/$__jkit_t/bin:$PATH" ;; esac
+  case $__jkit_t in sbt) __jkit_h=${SBT_HOME-} ;; gradle) __jkit_h=${GRADLE_HOME-} ;;
+    maven) __jkit_h=${MAVEN_HOME-} ;; *) __jkit_h=${JAVA_HOME-} ;; esac
+  __jkit_h=${__jkit_h%/}
+  __jkit_b="$__jkit_g/$__jkit_t/bin"
+  case "$__jkit_h" in ""|"$__jkit_g/$__jkit_t") ;; *) [ -d "$__jkit_h/bin" ] && __jkit_b="$__jkit_h/bin" ;; esac
+  __jkit_p=":$PATH:"
+  while :; do
+    case $__jkit_p in
+      *":$__jkit_b:"*) __jkit_p="${__jkit_p%%":$__jkit_b:"*}:${__jkit_p#*":$__jkit_b:"}" ;;
+      *":$__jkit_b/:"*) __jkit_p="${__jkit_p%%":$__jkit_b/:"*}:${__jkit_p#*":$__jkit_b/:"}" ;;
+      *) break ;;
+    esac
+  done
+  case $__jkit_p in :) PATH=$__jkit_b ;; *) __jkit_p=${__jkit_p#:}; PATH="$__jkit_b:${__jkit_p%:}" ;; esac
 done
 export PATH
 [ -z "${JAVA_HOME-}" ] && [ -e "$__jkit_g/jdk" ] && export JAVA_HOME="$__jkit_g/jdk"
@@ -60,8 +78,32 @@ jdk      17.0.2                  outside   JAVA_HOME=/usr/lib/jvm/java-17
          JAVA_HOME is set outside jkit and wins over the global jdk; remove it from your shell profile to use jkit's
 ```
 
-Remove the export to let jkit manage it. An explicit `jkit use`, `jkit sync`, or a project on `cd`
-still sets the variable, since you asked for that version.
+Remove the export to let jkit manage it. While your own `JAVA_HOME` applies, the hook puts its
+`bin` first on `PATH` instead of the global JDK's, so `java` is `$JAVA_HOME/bin/java`, also when it
+points at one of jkit's installs under `~/.jkit/tools`. A trailing slash on it doesn't put its
+`bin` on `PATH` twice.
+
+An explicit `jkit use`, `jkit sync`, or a project on `cd` still sets the variable, since you asked
+for that version. jkit keeps your value in `JKIT_USER_JDK` (`JKIT_USER_MAVEN`, and so on), says so,
+and gives it back, with its `bin` first on `PATH`, when you leave the project or run
+`jkit reset jdk`:
+
+```console
+$ jkit use jdk@21
+...
+  your own JAVA_HOME is kept in JKIT_USER_JDK: it comes back when jkit's jdk leaves this shell
+$ jkit reset jdk
+reset jdk in this shell
+  unset  JKIT_SHELL_JDK
+  set    JAVA_HOME=/usr/lib/jvm/java-17
+  unset  JKIT_USER_JDK
+  ...
+  JAVA_HOME is your own again: /usr/lib/jvm/java-17
+```
+
+A `JAVA_HOME` you change by hand while a project or `jkit use` applies is yours from then on: when
+jkit's choice goes, jkit leaves it as you set it, and says so. In a shell where jkit chose no JDK,
+`jkit reset jdk` changes nothing and says there was nothing to reset.
 
 "Already set" means non-empty in bash, zsh and PowerShell; in fish, set at all.
 
@@ -70,12 +112,16 @@ still sets the variable, since you asked for that version.
 A program can't change the environment of the shell that started it, so the hook defines `jkit`
 as a shell function:
 
-1. It creates an empty temporary file (`mktemp` in `$TMPDIR`, else `/tmp`).
+1. It creates an empty temporary file (`mktemp` in `$TMPDIR`, else `/tmp`, named `jkit-env.*`).
 2. It runs the jkit binary with `JKIT_ENV_FILE` pointing at that file.
 3. Commands that change this shell (`use`, `reset`, `sync`, `pin`, `unpin`) write shell code to it:
    `export`/`unset` lines in bash and zsh, `set -gx`/`set -e` in fish, `$env:` assignments in
    PowerShell. Every other command leaves it empty.
 4. The function sources the file if it isn't empty, deletes it, and returns jkit's exit code.
+
+A run that is interrupted before the function deletes the file (Ctrl-C, `kill -9`) can leave it
+behind; in bash, zsh and fish the next `jkit` run removes it (fish also when it exits), and
+PowerShell always removes it.
 
 Without the function (no hook, a script, a subshell), `JKIT_ENV_FILE` isn't set: `jkit use` and
 `jkit reset` refuse with a hint, and `jkit sync`, `pin` and `unpin` still do their work but leave
@@ -90,10 +136,23 @@ using jdk 21.0.13.1+2 temurin in this shell
   only this shell; for new shells too: jkit use jdk@21.0.13.1+2 temurin --global
 ```
 
-When jkit changes this shell's `PATH`, it only adds or removes entries inside `~/.jkit/tools/`;
-everything you put on `PATH` stays where it was. The variables it keeps for itself
-(`JKIT_SHELL_<TOOL>`, `JKIT_PROJECT_<TOOL>`, `JKIT_PROJECT`, `JKIT_GRAALVM_FOLLOWS_JDK`) are listed
-in [Configuration](/reference/configuration/#jkits-own-bookkeeping).
+When jkit changes this shell's `PATH`, it only adds or removes its own entries (under `~/.jkit`);
+everything you put on `PATH` stays, empty entries included. When `jkit reset` or leaving a project
+brings back the global version (or your own `*_HOME`), its `bin` moves to the front if it is
+further back, and jkit says so, since a move changes which `java` runs:
+
+```console
+  PATH   moved ~/.jkit/global/jdk/bin ahead of /usr/bin
+```
+
+In `--json` that is a change with action `move`. The variables jkit keeps for itself
+(`JKIT_SHELL_<TOOL>`, `JKIT_PROJECT_<TOOL>`, `JKIT_PROJECT`, `JKIT_USER_<TOOL>`,
+`JKIT_GRAALVM_FOLLOWS_JDK`) are listed in
+[Configuration](/reference/configuration/#jkits-own-bookkeeping).
+
+The first install of a tool becomes its global version. In a shell with the hook where that tool's
+`*_HOME` isn't set, jkit sets it right away and puts its `bin` on `PATH`, and says so: no new shell
+needed. `jkit use … --global` does the same when the variable was unset.
 
 ### Which jkit the hook runs
 
@@ -101,6 +160,8 @@ Once a project's JDK is active, its `bin` folder is first on `PATH`, and a file 
 must never be what runs. So the native jkit writes its own absolute path into the hook and calls
 that. If that file is gone (a package manager moved it), the hook takes the first `jkit` on `PATH`
 that isn't inside `~/.jkit`, and prints `jkit: not found on PATH` (exit code 127) if there is none.
+It skips relative `PATH` entries (`.`, `bin`), so a `./jkit` or `bin/jkit` in the folder you `cd`
+into never runs.
 
 ## Per shell
 
@@ -117,20 +178,28 @@ that isn't inside `~/.jkit`, and prints `jkit: not found on PATH` (exit code 127
   is unchanged. Because it runs at the prompt, `cd app && java -version` on one line still uses
   the old JDK.
 - **zsh.** The `cd` hook is a `chpwd` hook (`add-zsh-hook chpwd`), so it runs on every folder
-  change, including inside one command line.
+  change, including inside one command line. It doesn't run in `$( )` or `( )` subshells, such as
+  a prompt theme's, so jkit's messages don't end up in your prompt. The hook loads with
+  `setopt nounset` (`set -u`) and with `warn_create_global` on without errors or warnings, and
+  loading its completion doesn't turn on `COMPLETE_ALIASES` or define a `compopt` alias, so your
+  aliases complete as before.
 - **fish.** The `cd` hook runs when `PWD` changes, in interactive shells only: `conf.d` files are
-  read by every fish, scripts too.
+  read by every fish, scripts too. `conf.d` runs before `config.fish`, where a line such as
+  Homebrew's `fish_add_path --move` can put its `bin` ahead of jkit's again, so in interactive
+  shells the hook puts the `PATH` order back once more at the first prompt.
 - **PowerShell.** `jkit hook pwsh` (also the default when you run `jkit hook` on Windows) sets up
   `PATH`, the `*_HOME` variables and the `jkit` function inside a script block of its own, so your
-  profile's variables are untouched. Its temporary file is a `.ps1` with a UTF-8 byte-order mark,
-  so Windows PowerShell 5.1 reads non-ASCII folder names correctly. With auto-switch on it prints
-  a warning that PowerShell doesn't switch on `cd` yet; `jkit sync` switches by hand.
-  In jkit 0.4.0 the `jkit` function applies `use`, `reset`, `pin` and `sync` by dot-sourcing that
-  file, which Windows PowerShell 5.1's default execution policy blocks: jkit prints the changes and
-  the shell never gets them. Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once (the
-  same policy keeps 5.1 from loading `$PROFILE` at all). Also in 0.4.0, PowerShell drops the `--`
-  the function passes on, so `jkit exec … -- <command>` fails; run `jkit.exe exec …` instead. Both
-  are fixed for the next release.
+  profile's variables are untouched. On Windows, folders on `PATH` match whatever their case,
+  slash direction or trailing slash. The hook's output is ASCII only, so a path such as
+  `C:\Users\José` arrives intact. The `jkit` function reads its temporary file (UTF-8 with a
+  byte-order mark) and runs its text, rather than running it as a script file, so the execution
+  policy doesn't block `use`, `reset`, `pin`, `sync` and `exec`. PowerShell drops a bare `--` from
+  a function's arguments; the function puts it back, so `jkit exec jdk@21 -- java -version` works.
+  With auto-switch on it prints a warning that PowerShell doesn't switch on `cd` yet; `jkit sync`
+  switches by hand. Windows PowerShell 5.1 still needs scripts allowed to load `$PROFILE` at all:
+  `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`.
+- **Git Bash, MSYS2 and Cygwin** (Windows) have no jkit hook. On Windows, PowerShell is the shell
+  jkit has a hook for.
 
 For any other shell, `jkit env` prints the variables to set, and `jkit exec` runs a command with
 them.
@@ -173,14 +242,21 @@ Rules `--install` follows:
 - It creates the startup file (mode 644) and any missing folders (mode 755) when needed, and lists
   each one.
 - If the startup file is a symbolic link, the change goes to the file it points to, and jkit says
-  so.
-- A startup file that isn't valid UTF-8 is read and written back byte for byte (as Latin-1), so
-  nothing jkit doesn't change is altered.
+  so; the link stays a link.
+- The file is written atomically and synced to disk, keeping its permissions, owner and encoding
+  (UTF-8 with or without a byte-order mark, UTF-16, or Latin-1 for a file that isn't valid UTF-8),
+  so nothing jkit doesn't change is altered. A read-only file is refused.
+- The block always has LF line endings, also in a file with Windows (CRLF) line endings, so bash
+  and zsh still read it.
+- It finds jkit's block also when it is indented or has trailing spaces. A start marker with no
+  end marker (one deleted by hand) makes it stop with the line number and change nothing.
 - For bash, it checks `~/.bash_profile`, `~/.bash_login` and `~/.profile` (the first that exists,
   as bash does). If that file doesn't load `~/.bashrc`, it tells you to add
   `[ -f ~/.bashrc ] && . ~/.bashrc` to it, since login shells (macOS Terminal, ssh) read only that
   one.
-- PowerShell isn't supported yet: it fails and prints the line to add to `$PROFILE` by hand.
+- PowerShell isn't supported yet: it fails and prints the line to add to `$PROFILE` by hand. On
+  Windows it edits no startup file at all, Git Bash's `~/.bashrc` included (jkit has no hook for
+  Git Bash), and prints that `$PROFILE` line instead.
 
 ### `--auto-switch`
 
@@ -193,9 +269,14 @@ the variable wins. `--auto-switch` without `--install` is an error.
 
 `jkit hook --uninstall` removes the marked block, and the blank line before it if jkit added one,
 and nothing else. It deletes the startup file only when jkit created it and nothing else is left
-in it (fish's `conf.d/jkit.fish` is always jkit's own). A line that loads the hook outside the
-block is left alone, and jkit tells you its line number. Open shells keep the hook until they
-exit.
+in it (fish's `conf.d/jkit.fish` is always jkit's own). Every other byte of the file stays as it
+was, line endings included. A line that loads the hook outside the block is left alone, and jkit
+tells you its line number. A stray `# >>> jkit >>>` line before jkit's block, or a start marker
+with no end marker, makes it refuse and change nothing, rather than guess which lines to delete.
+Open shells keep the hook until they exit.
+
+On Windows, `jkit hook bash --uninstall` takes out a block an older jkit added to Git Bash's
+`~/.bashrc`.
 
 `--uninstall` doesn't change `config.toml`: `auto_switch` stays as it was. Use
 `jkit config unset shell.auto_switch` for that.
@@ -211,8 +292,16 @@ With `shell.auto_switch` on (in `config.toml`, or `JKIT_AUTO_SWITCH=1`), the hoo
    project already applied (`JKIT_PROJECT`), it prints nothing and stops.
 2. Otherwise, for each pinned tool, picks the matching installed build and prints the shell code
    that sets its `*_HOME` and `PATH`, recording it in `JKIT_PROJECT_<TOOL>`.
-3. Leaving a project, it sets each tool the project applied back to the global version.
-4. Tells you on stderr what changed, with the same lines as any other jkit command.
+3. Leaving a project, it sets each tool the project applied back to the global version, with its
+   `bin` moved to the front of `PATH` if it is further back. A `*_HOME` of your own that the
+   project replaced comes back instead, and a tool with no global version is unset
+   (`maven unset (no global maven)`).
+4. Tells you on stderr what changed, with the same lines as any other jkit command. A project file
+   whose pins jkit can't read (a `.java-version` saying `system`) gets "it pins nothing jkit can
+   read" and a pointer to `jkit status`, which says why.
+
+A change to `auto_switch` in `config.toml` applies to new shells. To stop switching in a shell
+that is already open, run `export JKIT_AUTO_SWITCH=0` there (`set -gx JKIT_AUTO_SWITCH 0` in fish).
 
 ```console
 $ cd ~/src/app

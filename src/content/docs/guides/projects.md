@@ -28,7 +28,7 @@ maven = "3.9"
 ```
 
 - `jkit pin <tool>@<version> [vendor]` writes one line of `jkit.toml`, creating the file if
-  needed. Only that tool's line changes; comments and order stay.
+  needed. Only that tool's line changes; comments, order and line endings stay.
 - `jkit unpin <tool>` removes that line.
 - `jkit sync` installs whatever the file asks for that isn't installed yet, and switches this
   shell to it. `jkit sync --dry-run` only lists what it would install.
@@ -81,6 +81,10 @@ What to know:
 - **Without auto-switch**, `jkit sync` (and `jkit pin`) still switch the current shell; you
   run it yourself.
 - **A broken project file** (bad TOML) is reported once, and your versions stay as they were.
+- **To stop switching in a shell that's already open**, `export JKIT_AUTO_SWITCH=0` there; a
+  change to `config.toml` applies to new shells.
+- **A `JAVA_HOME` you set yourself** is kept in `JKIT_USER_JDK` while the project applies, and
+  comes back when you leave. See [Shell hook](/reference/shell-hook/#a-java_home-you-set-yourself).
 
 ### The bash one-liner caveat
 
@@ -168,12 +172,14 @@ jkit reads these so existing repositories work unchanged. It never writes them:
 |---|---|---|
 | `.sdkmanrc` (SDKMAN) | `java=21.0.5-tem`, `maven=3.9.9` | jdk 21.0.5 temurin, maven 3.9.9 |
 | `.tool-versions` (asdf, mise) | `java temurin-21.0.5+11.0.LTS`, `gradle 8.10` | jdk 21.0.5+11.0.LTS temurin, gradle 8.10 |
-| `.java-version` (jEnv and others) | `17`, `1.8` | jdk 17 (any vendor), jdk 8 |
+| `.java-version` (jEnv and others) | `17`, `1.8`, `temurin64-21.0.5` | jdk 17 (any vendor), jdk 8, jdk 21.0.5 temurin |
 
-SDKMAN's vendor suffixes and asdf's vendor names are mapped to jkit's; tools jkit doesn't manage
-(kotlin, node, …) are skipped with one warning. The full mapping is in
-[Project files](/reference/project-files/), and [Migrating](/guides/migrating/) covers moving
-off those tools.
+SDKMAN's vendor suffixes, asdf's vendor names and jEnv's names are mapped to jkit's; tools jkit
+doesn't manage (kotlin, node, …) are skipped with one warning. When a folder has several of these
+files, the first one in the table that mentions a tool decides it, even when jkit can't read that
+entry: `jkit sync` then fails, installing nothing, rather than take a later file's pin. The full
+mapping is in [Project files](/reference/project-files/), and [Migrating](/guides/migrating/)
+covers moving off those tools.
 
 `jkit pin` won't edit these files. When the project file it finds is one of them, it stops and
 suggests `--here`, which creates a `jkit.toml` in the current folder; that `jkit.toml` then wins over the other files

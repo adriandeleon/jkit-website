@@ -131,6 +131,9 @@ build's exit code. Things to watch:
   code.
 - **A missing pin is an error.** `jkit env` and `jkit exec` exit with code 3 when the project
   pins a version that isn't installed, so a step never runs with half an environment.
+- **A pin jkit can't read is an error too.** `jkit sync` fails, installing nothing, when the file
+  pins a tool it can't read (a malformed version, or a decimal such as `maven = 3.10`, which TOML
+  reads as 3.1: quote versions). A whole number such as `jdk = 21` works.
 - **Gate on the setup.** `jkit doctor` exits 1 when a check fails.
 - **Bind mounts.** In Docker, a mounted repository can look world-writable, and jkit then ignores
   its project file. Set `JKIT_PROJECT_FILE` to the file's absolute path.

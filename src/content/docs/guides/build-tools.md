@@ -27,7 +27,13 @@ jkit pin gradle@8.14            # this project (jkit.toml)
 
 The first version of each tool you install becomes its global default. The hook then sets
 `MAVEN_HOME`, `GRADLE_HOME` or `SBT_HOME` and puts the tool's `bin` folder on `PATH`, so `mvn`,
-`gradle` and `sbt` run the version jkit picked, on the JDK in `JAVA_HOME`.
+`gradle` and `sbt` run the version jkit picked, on the JDK in `JAVA_HOME`. In a shell with the
+hook, a first install sets the variable and `PATH` right away, and says so.
+
+`jkit upgrade` stays within a Maven or Gradle minor release: a global Maven 3.9.9 moves to the
+newest 3.9.x (3.9.11, say), not to 3.10. To move to a new minor release, install it and make it
+the default (`jkit use maven@3.10 --global`). sbt, like the JDK, stays within its major version.
+`jkit prune` counts a build as superseded the same way.
 
 Where they come from, and how they're checked:
 
