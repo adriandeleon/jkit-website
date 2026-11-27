@@ -8,8 +8,8 @@ For editors, IDEs, scripts and AI agents that drive jkit. With `--json`, a comma
 go to stderr, so a program can read stdout whole and show stderr lines as progress.
 
 Commands with `--json`: `list`, `status`, `env`, `doctor`, `search`, `install`, `upgrade`, `use`,
-`pin`, `unpin`, `sync`, `remove`, `prune`, `config` (and its subcommands) and `self-update`.
-(`reset` and `hook` only make sense in a shell; `exec`'s stdout belongs to the command it runs;
+`reset`, `pin`, `unpin`, `sync`, `remove`, `prune`, `config` (and its subcommands) and `self-update`.
+(`hook` only makes sense in a shell; `exec`'s stdout belongs to the command it runs;
 `completion` prints a script.) For agents and scripts, see also [AI agents](/guides/ai-agents/)
 and [Scripts](/guides/scripts/).
 
@@ -20,7 +20,7 @@ and [Scripts](/guides/scripts/).
 $ jkit --version --json
 {
   "schemaVersion" : 1,
-  "version" : "jkit 0.4.0"
+  "version" : "jkit 0.5.0"
 }
 ```
 
@@ -31,6 +31,11 @@ removes or renames a field, or changes a field's meaning, bumps `schemaVersion`.
 ignore fields they don't know.
 
 Paths are absolute. Fields with no value are `null`, not left out, unless noted.
+
+The output is ASCII-safe where it matters: control characters, and characters that can hide text
+from a reader (such as Unicode tag characters, U+E0000 to U+E007F), are written as `\u` escapes, as
+text output already hides them. Where the console's code page can't hold a character (the Windows
+console, `LANG=C`), `--json` writes it as a `\u` escape too, instead of a substitute.
 
 ## Errors
 
@@ -114,8 +119,9 @@ the same way:
 
 Nothing jkit changes is silent. Every command that changes a file, a folder, a link or a variable
 prints a line for each change under its own message, and with `--json` lists them in `changes`
-(`install`, `upgrade` per line and for the lookup, `use`, `pin`, `unpin`, `sync`, `remove`,
-`prune`, `config set`, `config unset`, `self-update`, and `search` for the cache). The `cd` hook
+(`install`, `upgrade` per line and for the lookup, `use`, `reset`, `pin`, `unpin`, `sync`,
+`remove`, `prune`, `config set`, `config unset`, `self-update`, `env --install`,
+`env --uninstall`, and `search` for the cache). The `cd` hook
 (`shell.auto_switch`) follows the same rule: whenever it switches versions it prints the same lines
 on stderr, under a `jkit: using …` or `jkit: left the project …` line.
 
@@ -137,13 +143,16 @@ Each change has `kind`, `name`, `action` and `value`:
 | `file` | A project file `pin` or `unpin` wrote, `config.toml`, a shell startup file, or the jkit binary (`self-update`) | `create`, `update`, `delete` | null |
 | `link` | A global link | `set` (`value` is its target), `remove` | The target, or null |
 | `env` | A variable of the calling shell | `set` (with `value`), `unset` | The new value, or null |
-| `env` | `PATH`, reported per entry | `add`, `remove` | The entry |
+| `env` | `PATH`, reported per entry | `add`, `remove`, `move` (an entry already there that now comes before or after another, which changes which program runs) | The entry; `""` for an empty entry (the current folder) |
+| `user-env` | Windows: a variable of your user environment (`env --install` and `--uninstall`) | the same as `env` | the same as `env` |
 
 Checksums are fetched fresh, never cached, so they never show up here. Text mode folds the
-cached-list lines into one `cache` line.
+cached-list lines into one `cache` line, and `install` leaves out that line and the folders its own
+message names; `changes` lists them all.
 
-`list`, `status`, `env`, `exec` and `doctor` never change anything; nor does `hook` without
-`--install` or `--uninstall` (those edit your shell's startup file and `config.toml`).
+`list`, `status`, `env`, `exec` and `doctor` never change anything; nor do `hook` and `env` without
+`--install` or `--uninstall` (`hook`'s edit your shell's startup file and `config.toml`; `env`'s,
+the user's environment variables on Windows).
 
 Commands that change something also have a `notes` array: the same advice lines text mode prints
 under the changes, such as `"new shells with the jkit hook: JAVA_HOME=…"`. They are for people.
@@ -242,6 +251,31 @@ new process in `dir`: global links, overridden by the project's pins (shell choi
 - `project` is null without a project file (or with `--no-project`).
 - A pin with no matching install is an error document with exit code 3.
 
+### `jkit env --install` and `--uninstall`
+
+`jkit env --install --json` and `jkit env --uninstall --json`. Windows only (elsewhere an error
+document). They write your user environment variables (`HKCU\Environment`): `--install` sets each
+`*_HOME` of a tool with a global version to its global link and puts the links' `bin` folders first
+on the user `PATH`; `--uninstall` removes only what `--install` set. The message goes to stderr.
+
+```json
+{
+  "schemaVersion": 1,
+  "action": "install",
+  "changed": true,
+  "changes": [
+    { "kind": "user-env", "name": "JAVA_HOME", "action": "set", "value": "C:\\Users\\me\\.jkit\\global\\jdk" },
+    { "kind": "user-env", "name": "PATH", "action": "add", "value": "C:\\Users\\me\\.jkit\\global\\jdk\\bin" }
+  ],
+  "notes": ["programs started from now on get them (a new terminal, an IDE you restart); running ones, this shell included, keep what they have"]
+}
+```
+
+- `changed` is false when there was nothing to do; `changes` is then empty.
+- When `--install` replaces a `*_HOME` you set yourself, it also sets `JKIT_SAVED_<TOOL>`
+  (`JKIT_SAVED_JDK`, …) to your value, a `user-env` `set` change. `--uninstall` sets the `*_HOME`
+  back to it (`set`, not `unset`) and unsets `JKIT_SAVED_<TOOL>`.
+
 ## `jkit doctor`
 
 `jkit doctor [--network] --json`. Exit code 1 when any check has level `fail`, 0 otherwise; the
@@ -251,7 +285,7 @@ document is printed either way.
 {
   "schemaVersion": 1,
   "checks": [
-    { "id": "home", "level": "ok", "message": "jkit 0.4.0, linux-x64, home ~/.jkit", "fix": null },
+    { "id": "home", "level": "ok", "message": "jkit 0.5.0, linux-x64, home ~/.jkit", "fix": null },
     { "id": "links", "level": "fail", "message": "global maven → ~/.jkit/tools/maven/3.9.6, which no longer exists",
       "fix": "jkit use maven@3.9.11 --global, or remove the link: rm ~/.jkit/global/maven" }
   ],
@@ -261,8 +295,9 @@ document is printed either way.
 
 - `level` is `ok`, `info`, `warn` or `fail`; `fix` is null when there is nothing to do.
 - A check can report several lines (one per broken link, say). The ids are stable:
-  `home`, `hook`, `binary`, `config`, `links`, `outside-vars`, `path-order`, `store`,
-  `project`, `index`, `java-runs`, and `network` (only with `--network`).
+  `home`, `hook`, `binary`, `config`, `links`, `outside-vars`, `path-order`, `user-env`
+  (Windows), `store`, `temp-files` (only when there are some), `project`, `index`, `java-runs`,
+  and `network` (only with `--network`).
 - Messages and fixes are for people and may change; filter on `id` and `level`.
 
 ## `jkit search`
@@ -279,7 +314,7 @@ document is printed either way.
   "available": [
     { "tool": "jdk", "version": "25.0.1+8", "major": 25, "vendor": "temurin", "graalvm": false,
       "fx": false, "lts": true, "maintained": true, "preRelease": false, "installed": false,
-      "downloadable": true, "verifiable": true }
+      "downloadable": true, "verifiable": true, "behind": null }
   ],
   "changes": []
 }
@@ -300,6 +335,12 @@ What `available` holds for a JDK (or `graalvm`):
   jkit checks (install refuses it unless `--allow-unverified`). Either is `null` when jkit couldn't
   look it up (offline and not cached); `verifiable` is also `null` when the build isn't
   downloadable.
+- `behind` is set on a vendor's newest build of a release when the vendor stopped updating it:
+  that build is two or more updates behind the newest update at least two vendors have (20 update
+  numbers for JDK 8, whose numbers move by about 10 a quarter). Only OpenJDK update numbers
+  count; GraalVM distributions' own release numbers don't. It is
+  `{"newest": "21.0.13.1+5", "vendors": ["corretto", "zulu"]}` (the newest build of that release,
+  and who has it), and `null` otherwise or when jkit couldn't compare (offline and not cached).
 - `vendor` is the default vendor, or the one typed (`vendorChosen: true`).
 - `majors` lists every feature release foojay knows, newest first, with whether it is LTS and
   still maintained.
@@ -314,7 +355,7 @@ What `available` holds for a JDK (or `graalvm`):
 `jkit install <tool>@<version> [vendor] --json`.
 
 ```json
-{ "schemaVersion": 1, "status": "installed", "verified": true, "signedBy": "Adoptium",
+{ "schemaVersion": 1, "status": "installed", "verified": true, "signedBy": "Adoptium", "behind": null,
   "installed": { "...": "the install object" },
   "changes": [ { "kind": "folder", "name": "…/tools/jdk/21.0.9+10-temurin", "action": "create", "value": null } ],
   "notes": [ "signature checked: signed by Adoptium (key 843C48A565F8F04B)" ] }
@@ -327,7 +368,10 @@ What `available` holds for a JDK (or `graalvm`):
   no checksum at all is refused without that flag, unless a good signature stands in for it
   (Corretto).
 - `signedBy` is whose signature was checked, or null (see the install object); when a signature
-  couldn't be fetched or checked, `notes` says so.
+  couldn't be fetched or checked, `notes` says so, and a build checked by its checksum alone has
+  the note `checksum checked (sha256)`.
+- `behind` is as in `search`: set when the build is from a vendor that stopped updating that
+  release, else null.
 - Downloads and checksums come only over https. The first install of a tool also sets its global
   link (in `changes`), unless `--no-default`.
 
@@ -340,7 +384,7 @@ What `available` holds for a JDK (or `graalvm`):
   "schemaVersion": 1,
   "dryRun": true,
   "lines": [
-    { "tool": "jdk", "major": 21, "vendor": "temurin", "fx": false,
+    { "tool": "jdk", "major": 21, "release": "21", "vendor": "temurin", "fx": false,
       "from": "21.0.5+11", "to": "21.0.9+10", "status": "available" }
   ],
   "changes": [ { "kind": "file", "name": "/home/me/.jkit/index/3f9a….cache", "action": "update",
@@ -348,8 +392,9 @@ What `available` holds for a JDK (or `graalvm`):
 }
 ```
 
-- One entry per release line (tool, major, vendor, JavaFX or not). `tool` is `graalvm` for a
-  GraalVM-based line.
+- One entry per release line (tool, line, vendor, JavaFX or not). `release` is the line: the
+  major version for JDKs, GraalVM and sbt, major.minor (`3.9`) for Maven and Gradle; `major` is its
+  first number. `tool` is `graalvm` for a GraalVM-based line.
 - `status`: `up-to-date`, `available` (dry run), `upgraded` (then also `verified`, `signedBy`,
   `notes`, `path` and `changes`: the new folder and any global link moved) or `failed` (then
   `error: {message, hints}`, and `to` may be null).
@@ -363,6 +408,7 @@ What `available` holds for a JDK (or `graalvm`):
 
 ```json
 { "schemaVersion": 1, "scope": "global", "tool": "jdk", "installed": { "...": "the install object" },
+  "changed": true,
   "changes": [
     { "kind": "link", "name": "/home/me/.jkit/global/jdk", "action": "set", "value": "/home/me/.jkit/tools/jdk/25.0.1+8-temurin" }
   ],
@@ -370,8 +416,32 @@ What `available` holds for a JDK (or `graalvm`):
 ```
 
 - `scope` is `global` or `shell`. Without `--global` the shell hook must be active, as in text mode.
-- `--global` changes a link and no variables; without it, only variables of this shell change.
+- `changed` is `false` when `--global` names the install the global link already points at;
+  `changes` then has no link entry.
+- `--global` changes a link. In a hooked shell with no version of its own for the tool and its
+  variable (`JAVA_HOME`, `MAVEN_HOME`, …) unset, it also sets that variable to the link and, if
+  missing, adds the link's `bin` to `PATH`: `env` changes. Without `--global`, only variables of
+  this shell change.
 - `notes` are the same lines text mode prints (also on stderr).
+
+## `jkit reset`
+
+`jkit reset <tool> [--global] --json`.
+
+```json
+{
+  "schemaVersion": 1, "scope": "global", "tool": "maven", "changed": true,
+  "changes": [
+    { "kind": "link", "name": "/home/me/.jkit/global/maven", "action": "remove", "value": null }
+  ],
+  "notes": ["installs stay; new shells get no maven from jkit until: jkit use maven@<version> --global"]
+}
+```
+
+- `scope` is `global` or `shell`. Without `--global` the shell hook must be active, and `changes`
+  lists the shell's variables.
+- `changed` is false, with `changes` empty, when there was nothing to reset. The text lines go to
+  stderr.
 
 ## `jkit pin`
 
@@ -449,6 +519,8 @@ when it didn't, or when the line was one jkit couldn't use (it is removed anyway
 { "schemaVersion": 1, "dryRun": false,
   "builds": [ { "install": { "...": "the install object, as it was before removal" },
                 "newer": "21.0.9+10", "bytes": 201326592 } ],
+  "inUse": [ { "install": { "...": "the install object" }, "newer": "8.14.3", "bytes": 150994944,
+               "pid": 48213, "command": "/home/me/.jkit/tools/jdk/21.0.9+10-temurin/bin/java" } ],
   "leftovers": [ "/home/me/.jkit/tmp/install-4821" ],
   "cache": [ "/home/me/.jkit/index/0a579b56721481afc1486ff0.cache" ],
   "bytes": 201330000, "changes": [], "notes": [] }
@@ -456,8 +528,13 @@ when it didn't, or when the line was one jkit couldn't use (it is removed anyway
 
 - `builds` are installs with a newer stable build in the same release line (`newer`), other than
   a global one, one this shell uses, or one the project here pins.
-- `leftovers` are folders interrupted installs and removals left; `cache` the cached version
-  lists older than 30 days.
+- `inUse` are such builds kept because a running program uses them: `pid` and `command` (null
+  when the OS doesn't say) name one, whose executable is in the build or whose arguments name a
+  file in it (a Gradle daemon's classpath). A `jkit use` in another shell that runs nothing from
+  the build can't be seen.
+- `leftovers` are folders interrupted installs and removals left. A work folder jkit can't tell
+  is in use (on file systems without locks) is never removed and isn't listed, but named on
+  stderr with its age. `cache` holds the cached version lists older than 30 days.
 - `bytes` is the space freed (or, in a dry run, that would be). `changes` is empty in a dry run.
 
 ## `jkit config`
@@ -489,8 +566,8 @@ when it didn't, or when the line was one jkit couldn't use (it is removed anyway
 `jkit self-update [--check] --json`.
 
 ```json
-{ "schemaVersion": 1, "current": "0.3.0", "latest": "0.4.0", "status": "managed",
-  "installedWith": "homebrew", "binary": "/opt/homebrew/Cellar/jkit/0.3.0/bin/jkit",
+{ "schemaVersion": 1, "current": "0.4.0", "latest": "0.5.0", "status": "managed",
+  "installedWith": "homebrew", "binary": "/opt/homebrew/Cellar/jkit/0.4.0/bin/jkit",
   "command": "brew upgrade jkit", "changes": [], "notes": [] }
 ```
 

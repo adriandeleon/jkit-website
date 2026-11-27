@@ -1,12 +1,13 @@
 ---
 title: jkit upgrade
-description: Install the newest build of each installed major version of your JDKs, Maven, Gradle and sbt, moving global defaults along.
+description: Install the newest build within each installed release of your JDKs, Maven, Gradle and sbt, moving global defaults along.
 sidebar:
   order: 3
 ---
 
-Installs the newest build of each major version you have installed: JDK 21.0.5 to 21.0.9, Maven
-3.9.11 to 3.10.2. It never moves you to a new major version, and it keeps the old builds.
+Installs the newest build within each release you have installed: JDK 21.0.5 to 21.0.9, Maven
+3.9.9 to 3.9.11. It never moves you to a new release (JDK 25, Maven 3.10), and it keeps the old
+builds.
 
 ## Usage
 
@@ -17,11 +18,12 @@ jkit upgrade [-hnV] [--allow-unverified] [--fx] [--json] [--offline]
 
 ## What it does
 
-`jkit upgrade` groups your installs into **release lines**: a tool, its major version, and for
-JDKs the vendor and whether it's a JavaFX build. So `jdk 21 temurin`, `jdk 21 zulu`, `jdk 17
-temurin` and `maven 3` are four lines. For each line it:
+`jkit upgrade` groups your installs into **release lines**: a tool, its release (the major
+version for JDKs, GraalVM and sbt; major.minor for Maven and Gradle), and for JDKs the vendor and
+whether it's a JavaFX build. So `jdk 21 temurin`, `jdk 21 zulu`, `jdk 17 temurin` and `maven 3.9`
+are four lines. For each line it:
 
-1. Looks up the newest build from the same vendor with the same major version (online, cached 24
+1. Looks up the newest build from the same vendor in the same release (online, cached 24
    hours, like [`jkit search`](/reference/commands/search/)).
 2. If that is newer than your newest install in the line, downloads and checks it exactly as
    [`jkit install`](/reference/commands/install/) does.
@@ -30,8 +32,9 @@ temurin` and `maven 3` are four lines. For each line it:
 
 Things it doesn't do:
 
-- **Cross a major version.** JDK 21 stays 21; to move to 25, `jkit install jdk@25`. For Maven,
-  Gradle and sbt the major is the first number, so Maven 3.9.x can move to 3.10.x.
+- **Cross a release.** JDK 21 stays 21; to move to 25, `jkit install jdk@25`. Maven and Gradle
+  stay within their minor release: Maven 3.9.x stays 3.9.x; to move to 3.10, `jkit install
+  maven@3.10`. sbt stays within its major version.
 - **Remove old builds.** They stay installed; `jkit remove` them, or
   [`jkit prune`](/reference/commands/prune/) to remove every superseded one at once.
 - **Change this shell.** If this shell chose the old build with `jkit use`, jkit says so; run
@@ -44,11 +47,14 @@ Things it doesn't do:
 A line that fails (a download error, a missing checksum, a signature jkit can't check) is reported and the others still run;
 the exit code is then 1.
 
+When a line is up to date but the global link points at an older build of it, the "is up to date"
+line says so, with the `jkit use … --global` that moves it.
+
 ## Options
 
 | Option | Description |
 | --- | --- |
-| `[tool[@major]]` | Only this tool, and with `@major` only that major version. Default: everything. `jdk@lts` means the newest installed LTS release. |
+| `[tool[@major]]` | Only this tool, and with `@major` only that major version (`maven@3.9` narrows to one Maven or Gradle release). Default: everything. `jdk@lts` means the newest installed LTS release. |
 | `<vendor>` | Only that vendor's JDK lines. |
 | `-n`, `--dry-run` | Show what would be upgraded; install nothing. |
 | `--allow-unverified` | Install upgrades even when a download has no published checksum, or its publisher's signature can't be checked. |
@@ -68,7 +74,8 @@ See what would change:
 $ jkit upgrade --dry-run
 jdk@21 temurin is up to date (21.0.13.1+2)
 jdk@17 zulu is up to date (17.0.21.1+2)
-maven@3: 3.9.16 → 3.10.2
+maven@3.9 is up to date (3.9.16); the global maven is 3.9.15: jkit use maven@3.9.16 --global
+maven@3.8: 3.8.8 → 3.8.9
 run without --dry-run to install
 ```
 
@@ -76,12 +83,13 @@ Upgrade one tool:
 
 ```console
 $ jkit upgrade maven
-downloading maven 3.10.2 from repo.maven.apache.org
-upgraded maven@3: 3.9.16 → 3.10.2
-  folder ~/.jkit/tools/maven/3.10.2 created
-  link   ~/.jkit/global/maven → ~/.jkit/tools/maven/3.10.2
-  signature checked: signed by Apache Maven (Tamas Cservenak, key 3A387D43964143E3)
-  the old build stays: jkit remove maven@3.9.16
+maven@3.9 is up to date (3.9.16)
+warning: only a sha1 checksum is published for maven 3.8.9: it catches a broken download, not a tampered one
+downloading maven 3.8.9 from repo.maven.apache.org
+upgraded maven@3.8: 3.8.8 → 3.8.9
+  folder ~/.jkit/tools/maven/3.8.9 created
+  note: no signature jkit can check is published for maven 3.8.9; only its checksum was checked
+  the old build stays: jkit remove maven@3.8.8
 ```
 
 More:
@@ -115,8 +123,8 @@ error: unknown JDK vendor 'zuluu'
 
 ## JSON
 
-`--json` prints one row per release line with its `from`, `to` and `status` (`up-to-date`,
-`available`, `upgraded` or `failed`). See
+`--json` prints one row per release line with its `release` (`21`, `3.9`), `from`, `to` and
+`status` (`up-to-date`, `available`, `upgraded` or `failed`). See
 [`jkit upgrade` in JSON output](/reference/json/#jkit-upgrade).
 
 ## See also

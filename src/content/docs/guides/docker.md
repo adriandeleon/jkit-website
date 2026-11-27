@@ -9,10 +9,12 @@ This page shows how to use jkit in container images: install jkit and the projec
 build stage, build there, and copy only the JDK into the image you ship. It assumes you know
 Dockerfiles and multi-stage builds.
 
-:::caution[glibc base images only]
-The Linux jkit binary needs glibc 2.34 or newer and zlib: Debian 12 (`debian:12-slim`, also
-`bookworm`), Ubuntu 22.04 or 24.04, or Red Hat UBI 9 work. Alpine (musl) does not, and neither do
-Ubuntu 20.04 or RHEL 8.
+:::note[Which jkit build]
+The `linux-x64` and `linux-aarch64` builds need glibc 2.34 or newer and zlib: Debian 12
+(`debian:12-slim`, also `bookworm`), Ubuntu 22.04 or 24.04, or Red Hat UBI 9 work; Ubuntu 20.04
+and RHEL 8 don't. From 0.5.0, the `linux-x64-musl` build is static and needs nothing from the
+system, so it runs on Alpine (x64) and on older glibc images too. On Alpine, jkit installs the
+musl builds of a JDK. There is no arm64 musl build.
 :::
 
 ## Build stage, then a slim runtime image
@@ -20,7 +22,7 @@ Ubuntu 20.04 or RHEL 8.
 ```dockerfile title="Dockerfile"
 # ---- build: jkit, the project's JDK and Maven, and the build itself
 FROM debian:12-slim AS build
-ARG JKIT_VERSION=0.4.0
+ARG JKIT_VERSION=0.5.0
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates curl \
  && rm -rf /var/lib/apt/lists/*

@@ -41,6 +41,21 @@ these codes:
 | `126` | The command was found but couldn't be started |
 | `127` | The command isn't on the `PATH` jkit gives it |
 
+### Ctrl-C and other signals
+
+While the command runs, a Ctrl-C goes to the command itself (jkit ignores SIGINT while it waits),
+so a REPL that handles it keeps running. When a Ctrl-C ends the command, jkit ends from SIGINT
+too, so the script running `jkit exec` stops as it would without jkit; a shell shows exit code
+130. A command that only exits 129, 130 or 143 passes that code on like any other. To stop
+`jkit exec` from another process (a timeout), send it SIGTERM or SIGHUP: it passes SIGTERM on,
+waits for the command, and exits with its exit code.
+
+The same goes for `jkit install`, `jkit sync` and `jkit self-update`: Ctrl-C, SIGTERM or SIGHUP
+during a download deletes the partial file and says so, and nothing half-installed is left.
+After a Ctrl-C jkit ends from SIGINT, so `set -e` and the calling shell stop there (exit 130 on
+Windows, or as a container's PID 1); SIGTERM exits 143 and SIGHUP 129. In a background job whose
+shell set SIGINT to be ignored, it stays ignored.
+
 ## `jkit env` in a script
 
 ```bash
@@ -98,7 +113,9 @@ if ! jkit env >/dev/null 2>&1; then
 fi
 ```
 
-`jkit sync --dry-run` lists what `jkit sync` would install, without installing it.
+`jkit sync --dry-run` lists what `jkit sync` would install, without installing it. `jkit sync`
+fails, installing nothing, when the project file pins a tool it can't read (a decimal such as
+`maven = 3.10`, a malformed version), so a script never goes on with the wrong version.
 
 ## Reading JSON with jq
 

@@ -120,8 +120,11 @@ Two ways around it:
 - **Start the IDE from a terminal** with the hook loaded (`code .`, `idea .`, or your IDE's
   launcher script). It then inherits that shell's environment, including a `jkit use` choice.
 
-On Windows, programs outside a hooked PowerShell see the global JDK only if you set `JAVA_HOME`
-once; see [Windows](/guides/windows/#programs-outside-powershell).
+On Windows, `jkit env --install` (once) sets `JAVA_HOME` and the other `*_HOME` variables in your
+user environment to the global links and puts their `bin` folders on your user `PATH`, so IDEs
+started from the Start menu follow `jkit use … --global` too. A `java` on the system `PATH` still
+comes first; `jkit doctor` says if there is one. See
+[Windows](/guides/windows/#programs-outside-powershell).
 
 ## Gradle toolchains
 

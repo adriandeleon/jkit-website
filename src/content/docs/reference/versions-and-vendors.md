@@ -87,7 +87,9 @@ In a project file, `"latest"` or a left-out version means the same.
 `@lts` means the newest long-term-support (LTS) release. Only `jdk` and `graalvm` have LTS
 releases; `maven@lts` is an error.
 
-- Commands that go online (`install`, `search`, `pin`) take the newest release foojay marks as LTS.
+- Commands that go online (`install`, `search`, `pin`) take the newest release foojay marks as LTS;
+  with a vendor (`jdk@lts zulu`), that vendor's newest LTS release, not the newest LTS of any
+  vendor.
 - Commands that work offline (`use`, `exec`, `remove`, `upgrade`) take the newest LTS release you
   have installed from that vendor (the one you typed, or your default). jkit counts 8, 11, 17 and
   every fourth release after 17 (21, 25, 29, …) as LTS here.
@@ -101,7 +103,8 @@ jkit use jdk@lts zulu       # newest LTS release of Zulu you have installed
 
 Early-access builds, release candidates and milestones are left out unless you ask for them.
 jkit treats a version as a pre-release when it contains `-ea`, `alpha`, `beta`, `-rc`, `rc` followed
-by a number, `-m` followed by a number, `milestone` or `snapshot`.
+by a number, `-m` followed by a number, `milestone`, `snapshot`, `-dev`, `-preview`, `-pre` or
+`-nightly`. A build label such as `+11-src1` doesn't make a version a pre-release.
 
 ```bash
 jkit search jdk@27 --pre          # early-access JDK builds
@@ -129,14 +132,14 @@ corretto         21.0.13.1+2
 dragonwell       21.0.13.1  ○ no checksum
 gluon-graalvm    21.1  ○ no checksum
 graalvm          21.0.12
-graalvm-ce       21.0.2
-jetbrains        21.0.11+1163125
+graalvm-ce       21.0.2  ↓ behind: newest 21 is 21.0.13.1+5
+jetbrains        21.0.11+1163125  ↓ behind: newest 21 is 21.0.13.1+5
 kona             21.0.13+1
 liberica         21.0.13.1+5
 liberica-nik     21.0.13+6
-mandrel          21
+mandrel          21+23.1.8
 microsoft        21.0.13.1
-openjdk          21.0.2+13
+openjdk          21.0.2+13  ↓ behind: newest 21 is 21.0.13.1+5
 openlogic        21.0.12+8  ○ no checksum
 oracle           21.0.12.1
 sapmachine       21.0.13.1
@@ -146,6 +149,7 @@ temurin *        21.0.13.1+2
 zulu             21.0.13.1+2
 * default vendor   ● installed   · all builds of one vendor: jkit search jdk@21 <vendor>
 ○ no published checksum: install refuses it unless --allow-unverified
+↓ behind: the vendor stopped updating this release; other vendors have newer builds
 ```
 
 What to expect:
@@ -153,7 +157,12 @@ What to expect:
 - Most vendors use `<feature>.<interim>.<update>[.<patch>]+<build>`, such as `21.0.13.1+2`.
   Some leave out the build number (`21.0.13.1`).
 - Java 8 builds are listed in the modern form: `8.0.514+1`, not `1.8.0_514`.
-- GraalVM and Mandrel builds may carry only the Java version (`21.0.2`, or `21` for Mandrel).
+- GraalVM builds may carry only the Java version (`21.0.2`). Mandrel builds are
+  `<java>+<mandrel>` (`21+23.1.13`), so every Mandrel release is listed and installable on its own.
+- A build a vendor re-released under the same version (Corretto 11.0.20.9.1 after 11.0.20.8.1,
+  Zulu, Liberica and others) resolves to the newest one.
+- `↓ behind` marks a vendor that stopped updating a release: openjdk (jdk.java.net) and GraalVM CE
+  publish only the first updates of each release. See [`jkit search`](/reference/commands/search/#what-it-does).
 - Early-access builds look like `25.0.6-ea+3`.
 - Maven, Gradle and sbt use their own plain versions (`3.9.16`, `8.14`, `9.9.0`, `1.12.15`), as
   each project publishes them. Gradle marks pre-releases `-rc-1` or `-milestone-2`.
@@ -171,10 +180,15 @@ build, copy the full version from `jkit search` or `jkit list`, or use `jkit pin
 2. jkit asks foojay for that vendor's builds for your OS and CPU, keeps those that match the
    version, and leaves out pre-releases unless asked.
 3. It takes the newest match that has a direct download. Some vendors list builds that are only
-   offered behind a form; jkit skips those and tries the next one (up to 32).
+   offered behind a form; jkit skips those and tries the next one (up to 32). It only takes builds
+   of the vendor and major release you asked for.
+4. If the vendor stopped updating that release (its newest build is two or more updates behind
+   the newest update at least two vendors have), `install` warns and says where the newest build
+   is.
 
 jkit never swaps the vendor for you. When your vendor has no matching build, the install fails
-and names the vendors that do have one:
+and names the vendors that have that version; when none has it, the hint says so and names the
+newest build of that release:
 
 ```console
 $ jkit install jdk@8 microsoft
@@ -290,6 +304,9 @@ and CPU: run `jkit search jdk` to see yours.
 - Names aren't case-sensitive, and `_` and `-` are the same (`liberica_nik` works).
 - foojay's own names work too (`sap_machine`, `oracle_open_jdk`). Commands that check the name
   with foojay (`search`, `install`, `pin`, `sync`) also accept its synonyms, such as `"SAP Machine"`.
+  A synonym can't turn one vendor into another: Temurin (and `adoptium`), Microsoft and Corretto
+  are known without asking foojay, a distribution's own name or a name jkit reads as an alias
+  always means that vendor, and a synonym two distributions claim is ignored.
 - foojay also knows `redhat`; `jkit search jdk` lists no builds for it on Linux x64.
 - A vendor foojay adds later works as soon as foojay lists it, with no jkit update.
 - Retired distributions foojay still lists (AOJ, OJDK Build, the old per-release GraalVM CE
@@ -330,9 +347,19 @@ from jkit's are mapped; all others are used as they are:
 | `oracle-graalvm` | `graalvm` |
 | `semeru-openj9` | `semeru` |
 
-A plain number (`java 21`) means any vendor. A `-javafx` or `-fx` suffix on the vendor
-(`liberica-javafx-21`) asks for a JavaFX build. asdf's Zulu ids use Zulu's own numbering and don't
-match. See [Project files](/reference/project-files/) for the rest of both formats.
+A plain number (`java 21`) means any vendor. Also read:
+
+- A `-javafx` or `-fx` suffix on the vendor (`liberica-javafx-21`) asks for a JavaFX build.
+- Corretto's `21.0.5.11.1` numbering reads as 21.0.5 (`8.432.06.1` as 8.0.432), and Semeru's
+  `_openj9-…` suffix is dropped.
+- `mandrel-23.1.5.0-Final-java21` is Mandrel for Java 21.
+- `-jre`, `-lite` and `-musl` builds are pinned as the vendor's full JDK, with a warning.
+- A Zulu release number (`zulu-21.38.21`) pins only the major, with a warning: write the Java
+  version (`zulu-21.0.5`) to be exact.
+- `semeru-certified` is pinned as open Semeru, with a warning.
+- An unknown vendor is warned about when the file is read.
+
+See [Project files](/reference/project-files/) for the rest of both formats.
 
 ## See also
 

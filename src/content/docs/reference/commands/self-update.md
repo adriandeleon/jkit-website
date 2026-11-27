@@ -17,20 +17,25 @@ jkit self-update [-hV] [--check] [--json]
 ## What it does
 
 1. **Finds the newest release** by reading the `SHA256SUMS` file of the latest release on GitHub
-   (always fetched fresh). Pre-releases are on the releases page only, never offered here.
+   (always fetched fresh). Pre-releases are on the releases page only: self-update never moves a
+   release onto a pre-release, even one marked as the latest release.
 2. **Works out how this jkit was installed**, from where the binary is:
 
    | Installed with | How jkit tells | Update |
    | --- | --- | --- |
    | Homebrew | the binary is in a `Cellar/jkit/` folder (or under `.linuxbrew`) | `brew upgrade jkit` |
    | apt (`.deb`) | `/usr/bin/jkit`, dpkg lists the `jkit` package, and the Vitrina apt repository is set up | `sudo apt update && sudo apt install --only-upgrade jkit` |
-   | a `.deb` installed from a file | `/usr/bin/jkit`, dpkg lists the `jkit` package, no Vitrina repository | `curl -fLo /tmp/<file> <the new release's .deb URL> && sudo apt install /tmp/<file>` |
-   | dnf (`.rpm`) | `/usr/bin/jkit` on a system with an rpm database | `sudo dnf install <the new release's .rpm URL>` |
+   | a `.deb` installed from a file | `/usr/bin/jkit`, dpkg lists the `jkit` package, no Vitrina repository | `d=$(mktemp -d) && curl -fLo "$d/<file>" <URL> && echo '<sha256>  '"$d/<file>" \| sha256sum -c - && sudo apt install "$d/<file>"` |
+   | dnf (`.rpm`) | `/usr/bin/jkit` on a system with an rpm database | the same, ending in `sudo dnf install "$d/<file>"` |
    | winget | the binary is in winget's `Packages` folder | `winget upgrade AdrianDeLeon.jkit` |
    | a release archive | anything else | jkit replaces itself |
 
 3. **If it's already the newest**, it says so.
-4. **For a package manager's copy**, it prints the command above and changes nothing.
+4. **For a package manager's copy**, it prints the command above and changes nothing. For an
+   `.rpm` or a `.deb` installed from a file, it first checks the release's `SHA256SUMS.asc`, and the
+   command it prints downloads the package into a private `mktemp -d` folder and checks it against
+   that signed `SHA256SUMS` before `sudo dnf install` or `sudo apt install`, since dnf and apt
+   don't check the signature of a package given as a file or URL.
 5. **For a copy from a release archive**, it:
    1. checks that `SHA256SUMS` is signed by jkit's release key, built into jkit, using the
       release's `SHA256SUMS.asc`; a release without a good signature is refused, and nothing
@@ -41,18 +46,26 @@ jkit self-update [-hV] [--check] [--json]
    5. copies it next to the old binary and renames it over the old one in one step, keeping the
       old file's permissions.
 
-   If any step fails, the old binary is untouched. Windows can't replace a running `jkit.exe`, so
-   there the old one is renamed to `jkit.exe.old`, which the next self-update deletes.
+   On Linux, a musl system (Alpine) gets the static `linux-x64-musl` build. If any step fails, the
+   old binary is untouched. Windows can't replace a running `jkit.exe`, so there the old one is
+   renamed to `jkit.exe.old` (or `jkit.exe.1.old`, and so on, when an older jkit that is still
+   running holds that one), and the next self-update deletes them all. The Visual C++ runtime DLLs
+   next to `jkit.exe` (`VCRUNTIME140.dll`, `VCRUNTIME140_1.dll`) are replaced when they are there,
+   and never added to a folder without them.
+
+   Self-update doesn't hold the install lock while it downloads and tests the new binary, so
+   installs, `remove` and `prune` elsewhere don't wait for it.
 
 `SHA256SUMS` comes from the same place as the archive, so on its own it would catch a broken or
 altered download, not a compromised release. Its signature covers that: someone who could replace
 the files on the releases page couldn't sign them. Releases before 0.4.0 have no
-`SHA256SUMS.asc`. Only replacing the binary needs the signature: `--check`, and the upgrade
-command printed for Homebrew, apt, dnf and winget, download nothing. To check a release by hand, see
+`SHA256SUMS.asc`. Only replacing the binary and the `.rpm` or `.deb` file command need the
+signature: `--check`, and the upgrade command printed for Homebrew, apt and winget, download
+nothing. To check a release by hand, see
 [Verifying a jkit release](/reference/security/#verifying-a-jkit-release).
 
-You need write access to the folder holding jkit. There is no jkit build for musl Linux (Alpine).
-A jkit run on a JVM (a development build) can't update itself.
+You need write access to the folder holding jkit. There is no arm64 musl build. A jkit run on a
+JVM (a development build) can't update itself.
 
 ## Options
 
@@ -77,18 +90,19 @@ What you see:
 
 | Case | Output |
 | --- | --- |
-| Up to date | `jkit 0.4.0 is the newest release` |
-| Ahead of the newest release (a pre-release or development build) | `jkit 0.5.0-rc.1 is up to date: the newest release is 0.4.0` |
-| `--check`, newer out | `jkit 0.4.1 is out (this is 0.4.0)`, then the command that updates it |
-| Package manager | `jkit 0.4.1 is out (this is 0.4.0); jkit came from Homebrew, so update it there:` and the command |
-| Release archive | `updated jkit 0.4.0 → 0.4.1 at ~/.local/bin/jkit`, and the file changed |
+| Up to date | `jkit 0.5.0 is the newest release` |
+| Ahead of the newest release (a pre-release or development build) | `jkit 0.6.0-rc.1 is up to date: the newest release is 0.5.0` |
+| The newest is a pre-release, this isn't one | `jkit 0.5.0 is up to date: the newest release, 0.6.0-rc.1, is a pre-release, which self-update installs only over a pre-release` |
+| `--check`, newer out | `jkit 0.5.1 is out (this is 0.5.0)`, then the command that updates it |
+| Package manager | `jkit 0.5.1 is out (this is 0.5.0); jkit came from Homebrew, so update it there:` and the command |
+| Release archive | `updated jkit 0.5.0 → 0.5.1 at ~/.local/bin/jkit`, and the file changed |
 
 ## Exit codes
 
 | Code | When |
 | --- | --- |
 | `0` | Up to date, updated, or (package manager, `--check`) told you how. |
-| `1` | GitHub couldn't be reached, `SHA256SUMS` isn't signed by jkit's release key, the download failed its checksum, the new binary didn't run, the folder isn't writable, no build for this platform, or jkit runs on a JVM. |
+| `1` | GitHub couldn't be reached, `SHA256SUMS` isn't signed by jkit's release key (also for an `.rpm` or `.deb` installed from a file), the download failed its checksum, the new binary didn't run, the folder isn't writable, no build for this platform, or jkit runs on a JVM. |
 
 ## JSON
 

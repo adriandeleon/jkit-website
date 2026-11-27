@@ -34,9 +34,10 @@ it belongs to the command.
 
 ## What an agent can rely on
 
-- **Nothing asks a question.** No jkit command prompts or reads stdin. The download progress bar
-  is off when jkit isn't attached to a terminal.
-- **`--json`** on `list`, `status`, `env`, `doctor`, `search`, `install`, `upgrade`, `use`, `pin`,
+- **Nothing asks a question.** No jkit command prompts or reads stdin. Without a terminal there is
+  no progress bar: download progress is a plain line on stderr at each quarter and at least every
+  30 seconds.
+- **`--json`** on `list`, `status`, `env`, `doctor`, `search`, `install`, `upgrade`, `use`, `reset`, `pin`,
   `unpin`, `sync`, `remove`, `prune`, `config` and `self-update` prints exactly one JSON document on stdout, also on failure, with
   an `error.hints` list of commands to try. See the [JSON reference](/reference/json/).
 - **Exit codes** are stable: `0` ok, `1` failure, `2` bad arguments, `3` the version isn't
@@ -111,6 +112,15 @@ directly, so a REPL keeps running and its exit code comes through. To stop it fr
 process (a timeout, an agent's cancel button), send jkit SIGTERM (or SIGHUP): it passes SIGTERM
 on, waits for the command, and exits with the command's exit code. A second SIGTERM kills the
 command. A SIGINT sent to jkit's process alone does nothing.
+
+The exit code is always the command's, with one exception: when a Ctrl-C reached both jkit and the
+command and the command died from it, jkit ends from SIGINT too, so a script running `jkit exec`
+stops as it would without jkit. A shell shows 130 either way; a program that started jkit (Node,
+Python) sees a death by SIGINT, not exit code 130. As a container's PID 1, jkit exits 130.
+
+Stopping an install is safe too: Ctrl-C, SIGTERM or SIGHUP during a download deletes the partial
+file, and nothing half-installed is left. SIGTERM exits 143 and SIGHUP 129; after SIGINT jkit ends
+from SIGINT itself.
 
 ## Permissions to give an agent
 

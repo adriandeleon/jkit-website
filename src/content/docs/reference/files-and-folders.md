@@ -53,6 +53,8 @@ at: `bin/java` is directly inside. On macOS, jkit installs the `Contents/Home` f
 bundle, so the layout is the same as on Linux. The folder name is also the `id` in
 [`--json` output](/reference/json/#the-install-object).
 
+Unpacked JDKs, Maven, Gradle and sbt aren't group-writable, whatever the archive says.
+
 Each install has a `jkit-install.properties` file, which is how jkit knows a folder is a finished
 install. A folder without it isn't listed, and `jkit doctor` reports it as an unfinished install.
 
@@ -105,13 +107,16 @@ request, named after a hash of its URL.
 - An answer is used for 24 hours, then fetched again. `--refresh` fetches again now; `--offline`
   (or `JKIT_NETWORK_OFFLINE=1`) uses cached answers of any age and never goes online.
 - When a source can't be reached, answers with an error, or returns a web page (a captive portal),
-  an older cached answer stands in, with a warning.
+  an older cached answer stands in, with a warning, but only if it is at most 7 days old; an older
+  one fails, with a hint to use it on purpose with `--offline`.
+- When an answer can't be saved (a full disk, a read-only folder), jkit warns once and carries on.
 - The cache keeps at most 32 MB and nothing older than 30 days: writing to it deletes the oldest
   answers first. `jkit prune` also deletes answers older than 30 days.
 - Checksums and signatures are never cached; they are fetched fresh for every download.
 
 Commands report the cache files they write (`cache  ~/.jkit/index: 2 files saved from
-api.foojay.io`). Deleting `index/` is always safe.
+api.foojay.io`); `jkit install` lists them only in its `--json` output. Deleting `index/` is always
+safe.
 
 ### `tmp/`
 
@@ -120,17 +125,25 @@ into `tools/` in one step, so an interrupted install never leaves half a JDK in 
 `jkit remove` moves an install to `tmp/remove-<random>` before deleting it, and
 `jkit self-update` works in `tmp/install-self-<random>`.
 
+Ctrl-C, SIGTERM or SIGHUP during a download deletes the install's work folder before jkit stops.
 Folders left behind by an interrupted install or removal are deleted by the next install and by
 `jkit prune`. When `tools/` is on another disk than `tmp/`, the same steps happen next to the
 install instead, in `tools/<tool>/.<name>.partial` and `tools/<tool>/.remove-<random>`; these are
-cleaned up the same way. `jkit doctor` reports any of these it finds.
+cleaned up the same way. `jkit doctor` reports any of these it finds, with `jkit prune` as the fix.
+
+`jkit prune` and `jkit doctor` leave alone the folder a running install downloads into. On file
+systems without locks (some NFS), jkit can't tell whether a work folder belongs to a running
+install: it names those folders, with their age, and deletes none of them.
 
 ### Locks
 
 `.lock` and `.links.lock` are empty files jkit locks so that two jkit processes don't change the
-same thing at once. A second `jkit install` waits for the first, with a message; `jkit use --global`
-only waits for another link change, never for a download. Deleting them while no jkit runs is
-harmless.
+same thing at once. `.lock` is held only to look at and change `tools/`, never during a download, so
+parallel installs (two terminals, CI jobs sharing a home) download side by side, and `remove`,
+`prune` and `self-update` don't wait for a download. A second install of the same build waits for
+the first, with a message (Ctrl-C stops it), and downloads only if that one failed.
+`jkit use --global` only waits for another link change. Deleting the lock files while no jkit runs
+is harmless.
 
 ### `config.toml`
 
@@ -178,9 +191,17 @@ jkit changes nothing outside its home except:
 | `jkit.toml` in your project | `jkit pin`, `jkit unpin` |
 | The jkit binary itself | `jkit self-update`, for a jkit installed from a release archive |
 | A temporary file in `$TMPDIR` (or `/tmp`), deleted right after | Each run of `jkit` through the shell hook's function |
+| Your user environment variables (`HKCU\Environment`) | Windows only: `jkit env --install`; `--uninstall` takes out what it set |
+
+Startup files, `jkit.toml` and `config.toml` are written atomically: through a `*.jkit-tmp` file
+next to them, then renamed over the original, keeping its permissions, owner and encoding (on
+Windows, a file another program has open is retried, then written in place). A
+symlinked startup file stays a symlink (the change goes to what it links to), and a read-only file
+is refused. If jkit is killed halfway, the original is untouched and a `*.jkit-tmp` file may be
+left; `jkit doctor` reports it (check `temp-files`) with the command that removes it.
 
 Everything else (the hook's variables, `jkit use` in a shell) lives in the shell's environment and
-ends with the shell. jkit writes nothing to `/etc`, the registry, or system `PATH` settings.
+ends with the shell. jkit writes nothing to `/etc` or system `PATH` settings.
 
 To remove jkit completely, see [Uninstall](/guides/uninstall/).
 
@@ -205,11 +226,15 @@ The layout is the same, under `%USERPROFILE%\.jkit` (or `JKIT_HOME`):
 - There are no POSIX owners on Windows, so the ownership checks above don't apply; your user
   profile's default permissions protect the folder.
 - `jkit self-update` can't replace a running `jkit.exe`, so it renames the old one to
-  `jkit.exe.old`, which the next self-update deletes.
+  `jkit.exe.old` (or `jkit.exe.1.old`, and so on, when an older jkit still running holds that
+  one), which the next self-update deletes.
+- The release zip ships Microsoft's `VCRUNTIME140.dll` and `VCRUNTIME140_1.dll` next to
+  `jkit.exe`, so it starts without the Visual C++ Redistributable.
 
-Programs started outside a hooked PowerShell (cmd.exe, IDEs) see the global JDK only if you set
-`JAVA_HOME` to `%USERPROFILE%\.jkit\global\jdk` once and add `%JAVA_HOME%\bin` to your user
-`PATH`. See [Windows](/guides/windows/).
+Programs started outside a hooked PowerShell (cmd.exe, IDEs) see the global JDK once you run
+[`jkit env --install`](/reference/commands/env/#windows-the-user-environment), which sets
+`JAVA_HOME` and the other `*_HOME` variables in your user environment to the global links and puts
+their `bin` folders first on your user `PATH`. See [Windows](/guides/windows/).
 
 ## See also
 

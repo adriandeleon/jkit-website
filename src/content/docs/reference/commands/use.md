@@ -24,13 +24,20 @@ installed. See [how a version resolves](/reference/versions-and-vendors/#choosin
 
 ### With `--global`
 
-It points the link `~/.jkit/global/<tool>` at the install. That's all it changes: no variables,
-no files. Shells with the hook already use the link for `JAVA_HOME` (or `MAVEN_HOME`, …) and
-`PATH`, so open shells follow it at once, unless they chose their own version with `jkit use` or a
-project overrides it. IDEs and tools pointed at `~/.jkit/global/jdk` follow it too.
+It points the link `~/.jkit/global/<tool>` at the install, and changes no files. Shells with the
+hook already use the link for `JAVA_HOME` (or `MAVEN_HOME`, …) and `PATH`, so open shells follow it
+at once, unless they chose their own version with `jkit use` or a project overrides it. IDEs and
+tools pointed at `~/.jkit/global/jdk` follow it too. In a shell with the hook where the tool's
+variable was unset (no global version when the shell started), it also sets it to the link and
+puts the link's `bin` on `PATH`, and says so.
+
+If the install already is the global one, it says so (`the global maven is already 3.9.16,
+unchanged`) and changes nothing.
 
 `--global` works without the shell hook. If the project file here pins the tool, jkit reminds you
-that the pin wins in this project.
+that the pin wins in this project. On Windows it also says whether programs started outside
+PowerShell (cmd.exe, IDEs) follow it, which needs
+[`jkit env --install`](/reference/commands/env/#windows-the-user-environment).
 
 ### Without `--global`
 
@@ -122,7 +129,8 @@ jkit use graalvm@25              # GRAALVM_HOME only; JAVA_HOME stays
 
 ## JSON
 
-`--json` prints the `scope` (`global` or `shell`), the install object, `changes` and `notes`. See
+`--json` prints the `scope` (`global` or `shell`), the install object, `changed` (`false` when
+`--global` names the install that already is the global one), `changes` and `notes`. See
 [`jkit use` in JSON output](/reference/json/#jkit-use).
 
 ## See also

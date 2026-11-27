@@ -20,7 +20,8 @@ jkit sync [-hV] [--allow-unverified] [--dry-run] [--json] [--offline]
 1. **Finds the project file** from this folder upwards: `jkit.toml` (or `.jkit.toml`), else
    `.sdkmanrc`, `.tool-versions` and `.java-version`. See
    [which file applies](/reference/project-files/#which-file-applies). Warnings about entries it
-   skipped go to stderr.
+   skipped go to stderr. When a file pins a tool but jkit can't read that pin (`maven = 3.10`,
+   which TOML reads as 3.1, or a version that isn't one), sync fails and installs nothing.
 2. **For each pinned tool**, uses a matching install if there is one (your default vendor's first,
    when the pin names none). Otherwise it downloads and installs the newest matching build, from
    the pin's vendor or else your default vendor, exactly as [`jkit install`](/reference/commands/install/)
@@ -42,7 +43,8 @@ something unchecked. If one pin fails, what the earlier pins
 installed stays installed, and the error says so.
 
 With auto-switch on, the `cd` hook switches to installed pins by itself; `jkit sync` is still what
-installs missing ones.
+installs missing ones. In PowerShell, whose hook can't switch on `cd` yet, sync doesn't suggest
+auto-switch.
 
 ## Options
 
@@ -68,11 +70,20 @@ jdk 21: 21.0.13.1+2 temurin (installed)
   set    JKIT_PROJECT_JDK=~/.jkit/tools/jdk/21.0.13.1+2-temurin
   set    JAVA_HOME=~/.jkit/tools/jdk/21.0.13.1+2-temurin
   PATH   + ~/.jkit/tools/jdk/21.0.13.1+2-temurin/bin
-  to switch to a project's versions on cd: add auto_switch = true under [shell] in ~/.jkit/config.toml, then open a new shell
+  to switch to a project's versions on cd: jkit config set shell.auto_switch true, then open a new shell
 ```
 
 Each pin gets one line: `(installed)` when it was already there, `installed …` when sync
 downloaded it, and in a dry run `would install …` or `would not install …: no published checksum`.
+
+A pin jkit can't read:
+
+```console
+$ jkit sync
+warning: ~/src/app/jkit.toml:2: maven = 3.10 is a TOML number, which drops trailing zeros (3.10 reads as 3.1); quote it: maven = "3.10", skipped maven
+error: jkit.toml pins maven, but jkit can't read that pin (see the warning above); nothing was installed
+  fix the entry in ~/src/app, then run jkit sync again
+```
 
 See what it would do first:
 
@@ -92,7 +103,7 @@ jkit exec -- mvn -B verify
 | Code | When |
 | --- | --- |
 | `0` | Everything pinned is installed (and, with the hook, applied). |
-| `1` | No project file here or above, a broken or ignored project file, a download that failed or was refused, or `--offline` with a pin to download. |
+| `1` | No project file here or above, a broken or ignored project file, a pin jkit can't read, a download that failed or was refused, or `--offline` with a pin to download. |
 | `2` | Bad options, or a pin naming a vendor foojay doesn't know. |
 
 ## JSON

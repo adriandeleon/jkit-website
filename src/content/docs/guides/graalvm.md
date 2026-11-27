@@ -46,7 +46,19 @@ jkit exec graalvm@25 -- ./mvnw -Pnative package
 ```
 
 The version is the Java version (`graalvm@25` is GraalVM for Java 25), not GraalVM's own release
-number.
+number. Mandrel builds are listed and installed as `<java>+<mandrel>`, so every Mandrel release of
+one Java version is there:
+
+```console
+$ jkit search graalvm@21 mandrel
+21+23.1.13
+21+23.1.12.1
+21+23.1.12
+...
+```
+
+`jkit install graalvm@21 mandrel` takes the newest (`21+23.1.13` here), and `jkit upgrade` offers
+a newer one when there is one.
 
 What it sets:
 
@@ -93,7 +105,17 @@ mandrel        ✓  ✓  ✓  ✓   ✓  ✓  ✓  ✓
 ```
 
 Check how current each one is with `jkit search graalvm@21`: some vendors stop updating a release
-once a newer one is out, and others keep fixing LTS releases for longer.
+once a newer one is out, and others keep fixing LTS releases for longer. GraalVM CE publishes only
+the first updates of each release, so as a `jdk`, `jkit search jdk@21 graalvm-ce` marks its newest
+21 build as behind, and `jkit install` warns:
+
+```console
+$ jkit search jdk@21 graalvm-ce
+21.0.2  ↓ behind: newest 21 is 21.0.13.1+5
+↓ behind: the vendor stopped updating this release; other vendors have newer builds
+```
+
+Only OpenJDK update numbers count for this, not GraalVM distributions' own release numbers.
 
 To change the default GraalVM vendor:
 

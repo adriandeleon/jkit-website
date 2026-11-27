@@ -33,15 +33,17 @@ The checks, in order:
 | `home` | jkit's version, platform and home; that the home is writable. |
 | `hook` | The shell hook is loaded in this shell, and the `jkit` function is defined (not only inherited by a subshell or script). |
 | `binary` | `jkit` is on `PATH`, and only one copy of it. |
-| `config` | `config.toml` reads; your default vendors are ones foojay knows (checked against the cached vendor list, if there is one). |
+| `config` | `config.toml` reads; your default vendors, and where each comes from (default, `config.toml` or an environment variable), are ones foojay knows (checked against the cached vendor list, if there is one). |
 | `links` | Global links and this shell's `jkit use` choices point at installs that exist. |
 | `outside-vars` | `JAVA_HOME`, `MAVEN_HOME`, `GRADLE_HOME`, `SBT_HOME` or `GRAALVM_HOME` set outside jkit, and jkit installs nothing chooses any more. |
 | `path-order` | `java`, `mvn`, `gradle` and `sbt` on `PATH` are the ones jkit chose, not another copy earlier on `PATH`. |
-| `store` | Unfinished installs and leftovers of interrupted downloads. |
+| `user-env` | Windows only: whether [`jkit env --install`](/reference/commands/env/#windows-the-user-environment) has set your user `*_HOME` variables to jkit's global links, and a `java`, `mvn`, `gradle` or `sbt` in the system `PATH`, which comes before the user `PATH`. |
+| `store` | Unfinished installs and leftovers of interrupted downloads in `tmp/`, with `jkit prune` as the fix. The folder a running install downloads into is left alone; on file systems without locks (some NFS) it names the folders it can't tell about, with their age. |
+| `temp-files` | Leftover `*.jkit-tmp` files from an interrupted write of a startup file, `config.toml` or `jkit.toml`, with the command that removes them. Silent when there are none. |
 | `project` | The project file here: whether it reads, was ignored (and why), its warnings, and pins that aren't installed. |
-| `index` | How many version lists are cached and how old the newest is; whether offline mode is on. |
+| `index` | How many version lists are cached and how old the newest is; whether offline mode is on. Warns when `JKIT_OFFLINE` is set, which jkit doesn't read (offline mode is `JKIT_NETWORK_OFFLINE`). |
 | `java-runs` | The active JDK's `java -version` runs and finishes within 10 seconds. |
-| `network` | Only with `--network`: foojay, services.gradle.org, Maven Central and GitHub (sbt's downloads) can be reached, honouring your proxy and mirror settings. |
+| `network` | Only with `--network`: foojay, services.gradle.org, Maven Central and GitHub (sbt's downloads) can be reached, honouring your proxy and mirror settings. In offline mode it is skipped, and says so. |
 
 A check that crashes becomes a `fail` line of its own; the other checks still run. The last line
 counts warnings and problems, or says `no problems found`.
@@ -59,11 +61,11 @@ counts warnings and problems, or says `no problems found`.
 
 ```console
 $ jkit doctor
-ok    jkit 0.4.0, linux-x64, home ~/.jkit
+ok    jkit 0.5.0, linux-x64, home ~/.jkit
 warn  shell hook not loaded: jkit use can't change this shell, and the global versions aren't on PATH
       fix: jkit hook --install, then open a new shell
 ok    jkit on PATH: /usr/bin/jkit
-ok    default vendors: temurin (jdk), graalvm-ce (graalvm)
+ok    default vendors: temurin (jdk, default), graalvm-ce (graalvm, default)
 ok    global links and this shell's choices point at existing installs
 ok    no *_HOME variable set outside jkit
 ok    3 installs, nothing left over

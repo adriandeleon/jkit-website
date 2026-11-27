@@ -49,12 +49,15 @@ project that targets 17; but a build tool may need a JDK it supports (see
 
 ```bash
 jkit install jdk@lts           # the newest LTS release (online: the newest GA LTS foojay lists)
+jkit install jdk@lts zulu      # Zulu's newest LTS release
 jkit install jdk               # the newest release; same as jdk@latest
 jkit install jdk@21            # the newest 21 build
 jkit install jdk@21.0.5        # the newest 21.0.5 build
 ```
 
-The version is a prefix: `21` matches every 21 build and jkit takes the newest. Where jkit only
+With a vendor, `@lts` is that vendor's newest LTS release, not the newest LTS of any vendor
+(the same for `pin`, and `search` with a vendor). The version is a prefix: `21` matches every 21
+build and jkit takes the newest. Where jkit only
 looks at what's installed (`use`, `exec`, `remove`, `upgrade`), `@lts` means the newest LTS
 release you have installed.
 
@@ -89,7 +92,7 @@ vendor it lists works under its foojay name.
 | `liberica` | BellSoft Liberica | Also JavaFX builds. |
 | `microsoft` | Microsoft Build of OpenJDK | Common on Azure. |
 | `oracle` | Oracle JDK | Check Oracle's license terms for your use. |
-| `openjdk` | OpenJDK builds from jdk.java.net | Updated only while a release is current: `jkit search jdk@21` shows 21.0.2. |
+| `openjdk` | OpenJDK builds from jdk.java.net | Updated only while a release is current: its newest 21 is 21.0.2, which `jkit search` marks as behind. |
 | `sapmachine` | SapMachine (SAP) | |
 | `semeru` | IBM Semeru Runtime | Uses the OpenJ9 VM instead of HotSpot. |
 | `semeru-certified` | IBM Semeru Runtime Certified Edition | |
@@ -103,6 +106,19 @@ vendor it lists works under its foojay name.
 
 `jkit search jdk` shows every vendor for your platform, and which releases each has. The list
 changes as vendors come and go; what's shown there is what you can install.
+
+Some vendors publish only the first updates of each release (openjdk from jdk.java.net, GraalVM
+CE). `jkit search` marks a vendor's newest build that is two or more updates behind the newest
+update at least two vendors have (for JDK 8, two quarterly releases), and `jkit install` warns
+and says where the newest build is:
+
+```console
+$ jkit search jdk@21 openjdk
+21.0.2+13  ↓ behind: newest 21 is 21.0.13.1+5
+21.0.1+12
+21+35
+↓ behind: the vendor stopped updating this release; other vendors have newer builds
+```
 
 If you have no reason to choose, keep Temurin. Reasons to choose otherwise: your company has
 support from a vendor, your servers or cloud run a particular one and you want to match it, or

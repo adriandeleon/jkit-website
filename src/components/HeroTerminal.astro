@@ -1,15 +1,15 @@
 ---
-// The example session on the home page, from a real run with jkit 0.4.0 and the hook installed with
-// --auto-switch (paths shortened to ~; the JKIT_* bookkeeping lines and closing notes left out).
+// The example session on the home page, from a real run with jkit 0.5.0 and the hook installed with
+// --auto-switch, jdk 17 zulu installed before (paths shortened to ~; the download progress, the
+// JKIT_* bookkeeping lines and use's "only this shell" note left out).
 // Kept out of the MDX page so Markdown doesn't read the ~ pairs as strikethrough.
 ---
 
 <pre class="term" aria-label="Example terminal session"><span class="p">$ </span><span class="c">jkit install jdk@21</span>
 downloading jdk 21.0.13.1+2 temurin from github.com
 installed jdk 21.0.13.1+2 temurin → ~/.jkit/tools/jdk/21.0.13.1+2-temurin
-<span class="d">  folder ~/.jkit/tools/jdk/21.0.13.1+2-temurin created
-  link   ~/.jkit/global/jdk → ~/.jkit/tools/jdk/21.0.13.1+2-temurin
-  signature checked: signed by Adoptium (key 843C48A565F8F04B)</span>
+<span class="d">  signature checked: signed by Adoptium (key 843C48A565F8F04B)
+  make it the default: jkit use jdk@21 --global</span>
 <span class="p">$ </span><span class="c">cd ~/src/app</span>
 jkit: using ~/src/app/jkit.toml: jdk 17.0.21.1+2 zulu
 <span class="d">  set    JAVA_HOME=~/.jkit/tools/jdk/17.0.21.1+2-zulu

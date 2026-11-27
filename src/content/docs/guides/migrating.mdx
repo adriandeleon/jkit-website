@@ -101,7 +101,8 @@ same team can keep using it (see [Teams](/guides/teams/)).
 </Steps>
 
 What jkit reads from `.sdkmanrc`: the `java`, `maven`, `gradle` and `sbt` lines. Other
-candidates (kotlin, …) are skipped with one warning. SDKMAN ids have no build number, so
+candidates (kotlin, …) are skipped with one warning. When a candidate is set twice, the last line
+wins, as in `sdk env`. SDKMAN ids have no build number, so
 `21.0.5-tem` matches the newest 21.0.5 build. Early-access ids (`26.ea.20-open`) work; old GraalVM
 and Mandrel ids that name the GraalVM release instead of the Java version (`22.3.r17-grl`) don't,
 and jkit says to use the Java version (`21.0.5-graalce`).
@@ -140,10 +141,14 @@ How jkit reads `.tool-versions`:
   the rest are used as jkit vendor names. A `-javafx` or `-fx` vendor suffix asks for a JavaFX
   build.
 - A plain number (`java 21`) means any vendor; `latest` means the newest.
-- Only the first version on a line counts, not asdf's fallbacks. `system`, `ref:` and `path:` are
-  skipped with a warning.
-- asdf's Zulu ids use Zulu's own numbering, which doesn't match; write those as `java 21` or move
-  them to a `jkit.toml`.
+- Only the first version on a line counts, not asdf's fallbacks, and when a tool is set twice the
+  first line wins, as in asdf. `system`, `ref:` and `path:` are skipped with a warning.
+- Vendors' own numbering is read too: Corretto's `21.0.5.11.1` is 21.0.5, Semeru's `_openj9-…`
+  suffix is dropped, and `mandrel-23.1.5.0-Final-java21` is Mandrel for Java 21. `-jre`, `-lite`
+  and `-musl` builds are pinned as the vendor's full JDK, with a warning.
+- A Zulu release number (`zulu-21.38.21`) pins only the major, with a warning; write the Java
+  version (`zulu-21.0.5`) to be exact. `semeru-certified` is pinned as open Semeru, with a
+  warning. An unknown vendor is warned about when the file is read.
 
 <Aside type="caution">
 asdf keeps its global versions in `~/.tool-versions`. jkit's search for a project file stops at
@@ -173,8 +178,11 @@ again, then remove jEnv:
 </Steps>
 
 Projects keep their `.java-version` files. jkit reads a plain version (`17`, `17.0.2`, or `1.8`,
-read as 8) and uses any vendor. jEnv's own names (`openjdk64-17.0.2`) and `system` aren't versions,
-so jkit skips them with a warning; replace them with the number, or pin with `jkit pin jdk@17`.
+read as 8) and uses any vendor. It reads jEnv's own names too: `temurin64-21.0.5` and
+`corretto64-21` pin that vendor, and `openjdk64-17.0.2` pins 17.0.2 from any vendor, since jEnv
+gives that name to any build that only says OpenJDK. Oracle JDK 8 and 11 names
+(`oracle64-1.8.0.202`) are skipped with a warning, since Oracle offers those only after a sign-in;
+`system` is skipped too. Replace those with a number, or pin with `jkit pin jdk@17`.
 jEnv's global choice, in `~/.jenv/version`, isn't read.
 
 ## From manual installs and OS packages

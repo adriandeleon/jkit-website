@@ -73,7 +73,8 @@ the `ln` command above for the macOS Java wrappers to find them.
 - **Verification.** OS packages are signed by the distribution, which is a strong check; keep
   using them where that matters most. jkit checks every download against its published checksum,
   refuses one with none unless you pass `--allow-unverified`, and checks the publisher's
-  signature for Temurin, Microsoft and Corretto JDKs, Maven 3.9.0 and later, and sbt.
+  signature for Temurin, Microsoft and Corretto JDKs, Maven 3.9.0 and later, and sbt. jkit's own
+  `.deb` and `.rpm` are signed too, with the key of the Vitrina apt repository.
 
 ## Using both
 
@@ -82,4 +83,7 @@ system's `java` stays for system services while your shells use jkit's. Remove a
 you set in your profile, or it wins over jkit's; `jkit doctor` warns about it.
 
 jkit reads `.java-version` files, so a repository set up with `jenv local` works with `jkit sync`
-unchanged (any vendor; `1.8` reads as 8). See [migrating](/guides/migrating/).
+unchanged. A plain version means any vendor (`1.8` reads as 8), and jEnv's names pin the vendor
+they name (`temurin64-21.0.5`, `corretto64-21`); `openjdk64-17.0.2` means 17.0.2 from any vendor.
+jEnv's Oracle JDK 8 and 11 names are skipped with a warning, since Oracle offers those only after
+a sign-in. See [migrating](/guides/migrating/).

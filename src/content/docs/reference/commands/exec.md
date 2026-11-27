@@ -24,15 +24,12 @@ jkit exec [-hV] [--no-project] [--dir=<path>] [[<tool>[@version]
    [`jkit use`](/reference/commands/use/) does. A vendor follows its tool.
 3. **Runs the command** in that environment: each chosen tool's `*_HOME` is set and its `bin`
    folder put first on `PATH`. The command is looked up on that `PATH`, so `java` is the chosen
-   JDK's.
+   JDK's. On Windows, a path such as `./gradlew` is resolved against the command's folder and
+   tried with `.exe`, `.cmd` and `.bat`, so `jkit exec ./gradlew build` works.
 4. **Exits with the command's exit code.**
 
 `--` is required, and everything after it belongs to the command: `jkit exec -- mvn --help` shows
 Maven's help.
-
-In jkit 0.4.0, PowerShell with the hook loaded drops the `--` before jkit sees it, and jkit fails
-with `Unknown option`. Call `jkit.exe exec … -- …` there, which skips the hook's `jkit` function;
-it's fixed for the next release.
 
 It never uses the network and never installs anything. A version that isn't installed (named
 before `--`, or pinned by the project) exits with code 3 and the `jkit install` command to run. A
@@ -53,6 +50,11 @@ longer chosen. A `jkit use` made in the calling shell doesn't apply inside.
 - To stop it from another process (a timeout, an agent's cancel), send jkit SIGTERM (or SIGHUP):
   it passes SIGTERM on, waits for the command and exits with its exit code; a second SIGTERM
   kills the command. A SIGINT sent to jkit's process alone does nothing.
+- The exit code is always the command's, with one exception: when a Ctrl-C reached both jkit and
+  the command and the command died from it, jkit ends from SIGINT too, so a script running
+  `jkit exec` stops as it would without jkit. A shell shows 130 either way; a program that started
+  jkit sees a death by SIGINT. A command that only exits 129, 130 or 143 passes that code on. As
+  PID 1 (a container's init) jkit never ends from a signal: it exits 130.
 
 jkit's own errors go to stderr as `error: …` followed by indented hints; the command's output is
 untouched.

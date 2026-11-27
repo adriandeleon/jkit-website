@@ -45,7 +45,8 @@ export NO_PROXY=localhost,.internal.example.com
 - `HTTP_PROXY` isn't read: jkit makes no plain-http requests to the internet.
 - The proxy must be an HTTP proxy, written `http://host:port`. SOCKS proxies aren't supported.
 - Credentials go in the URL: `http://user:password@proxy.example.com:3128`. Encode special
-  characters in the password with `%` (`@` is `%40`). jkit hides the password in its messages.
+  characters in the password with `%` (`@` is `%40`); a `+` stays a literal `+`. jkit hides the
+  password in its messages.
 - `NO_PROXY` (or `no_proxy`) lists hosts to reach directly, separated by commas or spaces: an
   exact name, a domain (`example.com` or `.example.com` covers its subdomains too), or `*` for
   everything. A port after a name is ignored.
@@ -97,9 +98,17 @@ jkit install maven@3.9
 
   The one exception is plain `http://` to this machine (`localhost`, `127.0.0.1` or `[::1]`), for
   a mirror or cache running locally. Redirects are checked too: https stays https.
-- **Download links.** For Maven and sbt, the downloads come from the mirror itself. For JDKs and
-  Gradle, the version list names the download links, so a foojay or Gradle mirror must also
-  rewrite those links to internal https addresses if downloads have to stay inside your network.
+- **Download links.** For Maven and sbt, the downloads come from the mirror itself. For Gradle,
+  the version list names the download links, so a Gradle mirror must also rewrite those links to
+  internal https addresses if downloads have to stay inside your network.
+- **A foojay mirror and JDK download links.** For most vendors a foojay mirror may rewrite the
+  links too, but not for the vendors whose downloads jkit pins to the vendor's own server
+  (Temurin, Microsoft, Corretto, Zulu, Liberica, SapMachine, Semeru, Oracle, GraalVM CE, Oracle
+  GraalVM, Mandrel). An https mirror may serve the builds these vendors signed itself (Temurin,
+  Microsoft and Corretto), with each `.sig` next to its file: the signature and the version are
+  still checked. For their other builds (Temurin before July 2022, and every build of the other
+  vendors) it must keep the vendor's links. A mirror on this machine (`http://localhost`) may
+  serve those too. See [security](/reference/security/#foojay).
 - **Checksums and signatures still apply.** jkit checks every download against the checksum its
   source publishes. Maven 3.9.0 and later and sbt are also checked against their publisher's
   signature, which must be there: a Maven mirror (`JKIT_SOURCES_MAVEN_URL`) that doesn't serve the
@@ -111,6 +120,10 @@ jkit install maven@3.9
 
 Version lists are cached in `~/.jkit/index/` for 24 hours, so `jkit search` and `jkit install`
 don't ask the network again within that time. `--refresh` fetches them again.
+
+When a lookup fails (the server is down, answers 5xx or 429, or a captive portal answers
+instead), jkit falls back to a cached list only if it is at most 7 days old; with an
+older one the command fails, with a hint to use it on purpose with `--offline`.
 
 `--offline` (on `search`, `install`, `upgrade`, `pin` and `sync`), or `JKIT_NETWORK_OFFLINE=1`
 for every command, never contacts the network and uses only cached version lists, however old:

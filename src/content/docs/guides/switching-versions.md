@@ -52,8 +52,8 @@ using jdk 21.0.13.1+2 temurin in this shell
 ```
 
 Every variable it sets is printed. `JAVA_HOME` (or `MAVEN_HOME`, `GRADLE_HOME`, `SBT_HOME`) points
-at the install, and its `bin` folder goes first on `PATH`. jkit only ever removes `PATH` entries
-inside its own `tools` folder, so anything you added yourself stays.
+at the install, and its `bin` folder goes first on `PATH`. jkit only ever removes its own `PATH`
+entries (under `~/.jkit`), so anything you added yourself stays.
 
 The version is a prefix: `jdk@21` is the newest installed 21, `jdk@21.0.5` narrows it, and
 `jdk` alone is the newest installed JDK. `jdk@lts` is the newest long-term-support release you
@@ -71,6 +71,12 @@ reset jdk in this shell
   set    JAVA_HOME=~/.jkit/global/jdk
   PATH   - ~/.jkit/tools/jdk/21.0.13.1+2-temurin/bin
 ```
+
+If the `bin` that comes back is further back on `PATH` (behind `/usr/bin`, say), it moves to the
+front, and jkit says so (`PATH   moved ~/.jkit/global/jdk/bin ahead of /usr/bin`). A `JAVA_HOME`
+you had set yourself before `jkit use` comes back instead of the global one; jkit kept it in
+`JKIT_USER_JDK`. In a shell where jkit chose no JDK, `jkit reset jdk` says there is nothing to
+reset and leaves `JAVA_HOME` alone.
 
 Closing the terminal does the same: shell choices live only in that shell's environment.
 
@@ -92,8 +98,9 @@ keep what they have: the link changes under them, so a shell using the global JD
 on its next command, but a shell with its own `jkit use` choice, or in a project, keeps that.
 
 The first version of a tool you install becomes its global default on its own (unless you pass
-`--no-default`). Later installs don't change it; `jkit install` prints the `jkit use … --global`
-command to run if you want them to.
+`--no-default`). In a shell with the hook where that tool's `*_HOME` isn't set yet, jkit sets it
+and puts its `bin` on `PATH` right away, and says so. Later installs don't change it; `jkit install`
+prints the `jkit use … --global` command to run if you want them to.
 
 To have no global version of a tool at all:
 
@@ -184,8 +191,9 @@ These are also what scripts, CI and AI agents should use; see [Scripts](/guides/
 
 A shell you start from another one (typing `bash`, or a terminal inside some editors) inherits
 its environment, including a `jkit use` choice and a project's versions. The hook in the new
-shell keeps them: it only sets `JAVA_HOME` and the other variables when they're empty, and only
-adds the global `bin` folders to `PATH` when they're missing.
+shell keeps them: it only sets `JAVA_HOME` and the other variables when they're empty, and puts
+the `bin` of the `JAVA_HOME` it has (yours, a `jkit use` choice or the global one) first on
+`PATH`, without adding it twice.
 
 ```console
 $ jkit use jdk@21
@@ -201,8 +209,9 @@ maven    3.9.16                  global
 
 The hook sets `JAVA_HOME` only when it's empty. If your shell profile (`~/.bashrc`, `~/.zshrc`,
 `~/.profile`, `/etc/environment`) or another tool (SDKMAN, jEnv) sets it first, that value wins
-over jkit's global default. `jkit use` and project switching still set it, since you asked for
-those explicitly.
+over jkit's global default, and the hook puts its `bin` first on `PATH`, so `java` matches it.
+`jkit use` and project switching still set it, since you asked for those explicitly; jkit keeps
+your value in `JKIT_USER_JDK` and gives it back when you leave the project or run `jkit reset jdk`.
 
 `jkit status` says when this happens, and `jkit doctor` gives the fix:
 
@@ -243,7 +252,7 @@ default. For a project-specific JDK, point the IDE at the install folder under
 
 In PowerShell, `jkit use`, `jkit reset` and `--global` work the same once you've added the hook
 to your profile by hand (`jkit hook --install` doesn't edit PowerShell profiles yet). Windows
-PowerShell 5.1 needs scripts allowed first, or in jkit 0.4.0 `jkit use` prints changes the shell
-never gets: run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once. Switching on `cd` isn't
-available in PowerShell yet. See [Windows](/guides/windows/) and
+PowerShell 5.1 loads no profile until scripts are allowed: run
+`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once. Switching on `cd` isn't available in
+PowerShell yet. See [Windows](/guides/windows/) and
 [Shells](/guides/shells/).

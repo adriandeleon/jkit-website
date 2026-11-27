@@ -18,10 +18,12 @@ hook loaded.
 What is different, in short:
 
 - The hook goes into your PowerShell profile **by hand**; `jkit hook --install` doesn't edit
-  PowerShell profiles yet. Windows PowerShell 5.1 also needs scripts allowed first
-  ([see below](#load-the-hook-in-powershell)).
+  PowerShell profiles yet, and prints the line to add. Windows PowerShell 5.1 also needs scripts
+  allowed first ([see below](#load-the-hook-in-powershell)).
 - PowerShell doesn't switch versions on `cd` yet. Run `jkit sync` in a project instead.
-- cmd.exe and IDEs see the global JDK only after you set `JAVA_HOME` once.
+- cmd.exe and IDEs see the global JDK once you run `jkit env --install`
+  ([see below](#programs-outside-powershell)).
+- Git Bash, MSYS2 and Cygwin have no jkit hook.
 - Windows on ARM runs the x64 build under emulation.
 
 ## Install
@@ -39,18 +41,20 @@ use the `.zip`:
 
 1. Download `jkit-<version>-windows-x64.zip` from the
    [releases page](https://github.com/adriandeleon/jkit/releases/latest). It holds `jkit.exe`,
-   `LICENSE` and `THIRD-PARTY-NOTICES`.
+   `LICENSE`, `THIRD-PARTY-NOTICES` and, from 0.5.0, the Visual C++ runtime's
+   `vcruntime140.dll` and `vcruntime140_1.dll`.
 
 2. Check it against the release's `SHA256SUMS`:
 
    ```powershell
-   Get-FileHash .\jkit-0.4.0-windows-x64.zip -Algorithm SHA256
+   Get-FileHash .\jkit-0.5.0-windows-x64.zip -Algorithm SHA256
    ```
 
    The hash must match the line for that file in `SHA256SUMS` (PowerShell prints it in
    uppercase; compare without regard to case).
 
-3. Unpack `jkit.exe` into a folder of its own, such as `%LOCALAPPDATA%\Programs\jkit`, and add
+3. Unpack `jkit.exe` and the two DLLs into a folder of their own, such as
+   `%LOCALAPPDATA%\Programs\jkit`, and add
    that folder to your user `Path` (search the Start menu for "Edit environment variables for
    your account").
 
@@ -58,9 +62,11 @@ use the `.zip`:
 
 </Steps>
 
-`jkit.exe` needs the Microsoft Visual C++ Redistributable (2015 or newer, x64). winget installs
-it along with jkit, and most machines already have it. If `jkit.exe` doesn't start after a
-`.zip` install, install it:
+`jkit.exe` needs the Microsoft Visual C++ runtime. winget installs the Visual C++
+Redistributable (2015 or newer, x64) along with jkit. The `.zip` carries the runtime's two DLLs:
+keep them next to `jkit.exe`. `jkit self-update` keeps them up to date. Once the Redistributable
+is installed you can delete the two DLLs, and Windows Update keeps the runtime patched. With
+jkit 0.4.0 and earlier, whose `.zip` has no DLLs, install the Redistributable first:
 
 ```powershell
 winget install Microsoft.VCRedist.2015+.x64
@@ -83,7 +89,11 @@ jkit hook pwsh | Out-String | Invoke-Expression
 ```
 
 PowerShell 7 (`pwsh`) and Windows PowerShell 5.1 have separate profiles; add the line to each one
-you use. `jkit hook pwsh --install` stops with an error that prints this same line.
+you use. `jkit hook --install` (and `jkit hook pwsh --install`) stops with an error that prints
+this same line.
+
+The hook puts the global `bin` folders first on `PATH`, ahead of the system `PATH`, where
+`jkit env --install` alone can't put them.
 
 Windows PowerShell 5.1 (the one Windows comes with) runs no profile, and no script, until you allow
 them, so the hook never loads. Allow them once for your account; PowerShell 7 allows them already:
@@ -91,17 +101,6 @@ them, so the hook never loads. Allow them once for your account; PowerShell 7 al
 ```powershell
 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ```
-
-<Aside type="caution" title="Known issues in jkit 0.4.0">
-- **Windows PowerShell 5.1 without `RemoteSigned`:** `jkit use`, `reset`, `pin` and `sync` print
-  the changes, but the shell never gets them, because the hook applies them through a script file
-  the default policy blocks. The command above fixes it.
-- **`jkit exec … -- <command>` with the hook loaded:** PowerShell drops the `--`, and jkit fails
-  with `Unknown option`. Call the program itself, which skips the hook:
-  `jkit.exe exec jdk@21 -- java -version`.
-
-Both are fixed for the release after 0.4.0.
-</Aside>
 
 Then:
 
@@ -114,6 +113,10 @@ jkit status
 
 Without the hook, `jkit use` without `--global` can't change the shell, and says so.
 
+**Git Bash.** jkit has no hook for Git Bash, MSYS2 or Cygwin. An older jkit's
+`jkit hook --install` could add a bash block to Git Bash's `~/.bashrc`, which made every Git Bash
+start fail; `jkit hook bash --uninstall` takes it out.
+
 ## Projects in PowerShell
 
 Switching on `cd` isn't available in PowerShell yet. In a project with a `jkit.toml` (or
@@ -123,9 +126,10 @@ Switching on `cd` isn't available in PowerShell yet. In a project with a `jkit.t
 jkit sync                  # installs the pins and switches this PowerShell to them
 ```
 
-`jkit exec` works without the hook: `jkit exec -- mvn -v`. In 0.4.0, in a PowerShell with the hook
-loaded, write `jkit.exe exec -- mvn -v` (see the known issues above). On Windows it looks for
-`.exe`, `.cmd` and `.bat` files on the `PATH` it gives the command, so `mvn` runs `mvn.cmd`.
+`jkit exec` works with or without the hook: `jkit exec -- mvn -v`. On Windows it looks for
+`.exe`, `.cmd` and `.bat` files on the `PATH` it gives the command, so `mvn` runs `mvn.cmd`. A
+path is resolved against the folder the command runs in and tried the same way, so
+`jkit exec -- ./gradlew build` runs `gradlew.bat`.
 
 For a script, load the environment once:
 
@@ -136,28 +140,36 @@ jkit env --shell pwsh | Out-String | Invoke-Expression
 ## Programs outside PowerShell
 
 `jkit use jdk@21 --global` points `%USERPROFILE%\.jkit\global\jdk` at the install. Only shells
-with the hook read it on their own. For cmd.exe, IDEs and anything else started from the desktop,
-set two user environment variables once:
+with the hook read it on their own. For cmd.exe, IDEs and anything else started from Explorer, run
+once:
 
-<Steps>
+```powershell
+jkit env --install
+```
 
-1. Open "Edit environment variables for your account" from the Start menu.
+It sets `JAVA_HOME`, `MAVEN_HOME`, `GRADLE_HOME`, `SBT_HOME` and `GRAALVM_HOME` in your user
+environment to jkit's global links, for each tool that has a global version, and puts their `bin`
+folders first on your user `PATH` (`GRAALVM_HOME` doesn't go on `PATH`). The rest of `PATH` stays
+exactly as it was, `%VAR%`s and all. Each change is printed. Programs started from then on get the
+variables (a new terminal, an IDE you restart); running ones, this shell included, keep what they
+have.
 
-2. Add a variable `JAVA_HOME` with the full path of the link, such as
-   `C:\Users\you\.jkit\global\jdk`.
+From then on, `jkit use … --global` changes the version for all of them, with no need to touch the
+variables again: they name the global links, which `jkit use` moves. `jkit use … --global` says
+whether programs outside PowerShell follow it. A tool that has no global version yet is left out;
+after you set one, run `jkit env --install` again.
 
-3. Edit `Path` and add `%JAVA_HOME%\bin`.
-
-4. Sign out and in again, or restart the programs that should see it.
-
-</Steps>
-
-From then on, `jkit use jdk@… --global` changes the JDK for all of them, with no need to touch
-the variables again. The same works for Maven (`MAVEN_HOME`, `global\maven`) and Gradle
-(`GRADLE_HOME`, `global\gradle`).
-
-A hooked PowerShell leaves a `JAVA_HOME` that is already set alone; since it points at the same
-global folder, the result is the same.
+- **A `*_HOME` of your own** that `--install` replaces is kept in `JKIT_SAVED_<TOOL>` (such as
+  `JKIT_SAVED_JDK`), and `jkit env --uninstall` puts it back. A value that is one of jkit's own
+  installs isn't kept.
+- **`jkit env --uninstall`** removes only what `--install` set. It doesn't put back a folder that no
+  longer exists, and says so.
+- **The system `PATH` comes first.** Windows puts the system `PATH` before the user one, so a
+  `java` there (from a JDK installed for all users, say) still wins outside a hooked PowerShell.
+  `jkit env --install` and `jkit doctor` warn about it; removing it from the system `PATH` needs
+  admin rights. A hooked PowerShell puts the global versions first anyway.
+- **`jkit doctor`** says whether your user environment is set up (check `user-env`), and which
+  variables are missing.
 
 To point an IDE at a JDK directly, see [IDEs](/guides/ides/).
 
@@ -188,8 +200,11 @@ jkit self-update
 
 A jkit from winget is left to winget, and `self-update` prints the command:
 `winget upgrade AdrianDeLeon.jkit`. A jkit from the `.zip` is replaced in place after checking the
-download against the release's `SHA256SUMS`, signed by jkit's release key. Windows can't replace a running `.exe`, so the old
-one is renamed to `jkit.exe.old` and deleted by the next `self-update`.
+download against the release's `SHA256SUMS`, signed by jkit's release key; the Visual C++ DLLs
+next to it are replaced too, and never added to a folder without them. Windows can't replace a
+running `.exe`, so the old one is renamed to `jkit.exe.old` and deleted by the next
+`self-update`. If an older jkit that is still running holds `jkit.exe.old`, the old binary is set
+aside as `jkit.exe.1.old` (and so on), and the next `self-update` deletes them all.
 
 ## Windows on ARM
 
@@ -206,16 +221,21 @@ emulation too.
   the program (`gradle --stop` for the daemon) and run it again.
 - **Paths with spaces** in `JAVA_HOME` set outside jkit, such as `"C:\Program Files\…"` with
   quotes, are read without the quotes.
+- **Console symbols.** Where the console's code page lacks jkit's symbols, jkit shows `->`, `...`,
+  `+`, `o` and `*` instead of `?` (as with `LANG=C` elsewhere), and `--json` writes `\u` escapes.
+  Paths with accents (`C:\Users\José`) reach the PowerShell hook and `jkit env --shell pwsh`
+  intact from 0.5.0.
 
 ## Uninstall
 
 ```powershell
+jkit env --uninstall                               # if you ran jkit env --install
 notepad $PROFILE                                   # remove the jkit hook line
 Remove-Item -Recurse -Force "$env:USERPROFILE\.jkit"
-winget uninstall AdrianDeLeon.jkit                 # or delete jkit.exe from its folder
+winget uninstall AdrianDeLeon.jkit                 # or delete jkit.exe and its DLLs from its folder
 ```
 
-Remove the `JAVA_HOME` and `Path` entries you added by hand, too.
+Remove any `JAVA_HOME` and `Path` entries you added by hand, too.
 
 <Aside type="tip">
 Working in WSL? The Linux jkit runs there and manages its own JDKs, separate from the Windows

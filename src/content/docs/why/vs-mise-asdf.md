@@ -58,7 +58,8 @@ stood in November 2026.
   sets the variables directly, so tools that read `JAVA_HOME` or look for a JDK folder see the
   same JDK as your shell. `jkit status` shows which one applies and why.
 - **Windows.** mise runs on Windows; asdf doesn't document Windows support, and asdf-java needs
-  bash 5. jkit runs on Windows as a preview.
+  bash 5. jkit runs on Windows as a preview; `jkit env --install` gives cmd.exe, IDEs and other
+  programs the global versions too.
 - **Trust prompts.** mise may ask you to trust a project's config file before using parts of it.
   jkit's project files only name versions, so there's nothing to trust; it ignores files owned by
   another user or writable by everyone instead.
@@ -69,8 +70,11 @@ stood in November 2026.
 
 jkit reads `.tool-versions` as it is, and never writes it. asdf-java names map to jkit's vendors
 (`temurin`, `adoptopenjdk` as temurin, `graalvm-community` as graalvm-ce, …); only the first
-version on a line counts, and `system`, `ref:` and `path:` are skipped. asdf-java's Zulu ids use
-Zulu's own numbering, so they don't match.
+version on a line counts, and `system`, `ref:` and `path:` are skipped. Corretto's `21.0.5.11.1`
+numbering, Semeru's `_openj9-…` suffix, Mandrel's `mandrel-<release>-java<N>` and `-javafx` read
+too; `-jre`, `-lite` and `-musl` ids are pinned as the vendor's full JDK, with a warning. A Zulu
+release number such as `zulu-21.38.21` pins only the major, with a warning; write the Java version
+(`zulu-21.0.5`) to be exact.
 
 ```text title=".tool-versions"
 java temurin-21.0.5+11.0.LTS
