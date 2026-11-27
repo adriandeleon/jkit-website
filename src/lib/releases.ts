@@ -2,7 +2,8 @@
 // The newest series is at /whats-new/ (and /whats-new/x.y/); older ones at /whats-new/x.y/.
 
 export const releaseSeries = [
-  { version: "0.5", label: "0.5.x", href: "/whats-new/" },
+  { version: "0.6", label: "0.6.x", href: "/whats-new/" },
+  { version: "0.5", label: "0.5.x", href: "/whats-new/0.5/" },
   { version: "0.4", label: "0.4.x", href: "/whats-new/0.4/" },
   { version: "0.3", label: "0.3.x", href: "/whats-new/0.3/" },
   { version: "0.2", label: "0.2.x", href: "/whats-new/0.2/" },
@@ -10,6 +11,7 @@ export const releaseSeries = [
 ] as const;
 
 export const releases: Record<string, { date: string; post?: string }> = {
+  "0.6.0": { date: "2026-11-27", post: "/news/jkit-0-6-0/" },
   "0.5.0": { date: "2026-11-26", post: "/news/jkit-0-5-0/" },
   "0.4.0": { date: "2026-11-24", post: "/news/jkit-0-4-0/" },
   "0.3.0": { date: "2026-11-24", post: "/news/jkit-0-3-0/" },
