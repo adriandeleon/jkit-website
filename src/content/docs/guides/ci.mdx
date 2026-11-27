@@ -24,6 +24,8 @@ jkit exec -- mvn -B verify
 
 `jkit sync` without the shell hook only installs (it says the shell is unchanged), and
 `jkit exec` runs one command with the project's versions. You don't need the hook in CI.
+`jkit sync` fails, installing nothing, when a project file pins a tool it can't read (such as
+`maven = 3.10`, which TOML reads as 3.1), so CI doesn't go on with the wrong version.
 
 The examples assume a `jkit.toml` that pins `jdk` and `maven`. With the Maven or Gradle wrapper,
 pin only `jdk` and run `jkit exec -- ./mvnw -B verify` or `jkit exec -- ./gradlew build`.
@@ -32,11 +34,11 @@ pin only `jdk` and run `jkit exec -- ./mvnw -B verify` or `jkit exec -- ./gradle
 
 Each release has an archive per platform and a `SHA256SUMS` file. The archive names follow
 `jkit-<version>-<platform>.tar.gz`, where the platform is `linux-x64`, `linux-aarch64`,
-`macos-x64` or `macos-aarch64` (Windows: `jkit-<version>-windows-x64.zip`). Each archive holds
+`linux-x64-musl`, `macos-x64` or `macos-aarch64` (Windows: `jkit-<version>-windows-x64.zip`). Each archive holds
 `jkit`, `LICENSE` and `THIRD-PARTY-NOTICES`.
 
 ```bash
-JKIT_VERSION=0.4.0
+JKIT_VERSION=0.5.0
 base=https://github.com/adriandeleon/jkit/releases/download/v$JKIT_VERSION
 curl -fsSLO "$base/jkit-$JKIT_VERSION-linux-x64.tar.gz"
 curl -fsSLO "$base/SHA256SUMS"
@@ -45,9 +47,13 @@ mkdir -p "$HOME/.local/bin"
 tar -xzf "jkit-$JKIT_VERSION-linux-x64.tar.gz" -C "$HOME/.local/bin" jkit
 ```
 
-Pin the jkit version in CI, as you would any other tool, and bump it on purpose. The Linux build
-needs glibc 2.34 or newer (Ubuntu 22.04+, Debian 12+, RHEL 9+): not Alpine. On macOS, use
-`shasum -a 256 -c SHA256SUMS --ignore-missing`.
+Pin the jkit version in CI, as you would any other tool, and bump it on purpose. The `linux-x64`
+and `linux-aarch64` builds need glibc 2.34 or newer (Ubuntu 22.04+, Debian 12+, RHEL 9+). On
+Alpine (x64), or an older glibc, use `linux-x64-musl` (from 0.5.0), a static build that needs
+nothing from the system. On macOS, use `shasum -a 256 -c SHA256SUMS --ignore-missing`.
+
+Without a terminal, as in a CI log, download progress is a line at each quarter and at least
+every 30 seconds, so a long download doesn't leave the log silent.
 
 ## Per CI system
 
@@ -62,7 +68,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      JKIT_VERSION: 0.4.0
+      JKIT_VERSION: 0.5.0
     steps:
       - uses: actions/checkout@v4
 
@@ -116,7 +122,7 @@ Within a single step, `eval "$(jkit env)"` does the same for the rest of that st
 build:
   image: ubuntu:24.04
   variables:
-    JKIT_VERSION: "0.4.0"
+    JKIT_VERSION: "0.5.0"
     JKIT_HOME: "$CI_PROJECT_DIR/.jkit-home"
     FF_DISABLE_UMASK_FOR_DOCKER_EXECUTOR: "true"   # see below
   cache:

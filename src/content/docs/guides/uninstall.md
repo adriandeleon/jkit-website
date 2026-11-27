@@ -15,8 +15,9 @@ rm -rf ~/.jkit                 # every install, link, cached list and setting
 brew uninstall jkit            # or the command for how you installed it (below)
 ```
 
-Do them in this order: the first step needs jkit. On Windows, skip it and take the hook line out
-of your PowerShell `$PROFILE` by hand ([below](#1-remove-the-shell-hook)).
+Do them in this order: the first step needs jkit. On Windows, run `jkit env --uninstall` first if
+you ran `jkit env --install` ([below](#windows-user-environment)), then take the hook line out of
+your PowerShell `$PROFILE` by hand ([below](#1-remove-the-shell-hook)).
 
 ## 1. Remove the shell hook
 
@@ -37,8 +38,23 @@ file. For fish, it deletes `~/.config/fish/conf.d/jkit.fish`, which is jkit's ow
 - **PowerShell:** `jkit hook --install` doesn't edit PowerShell profiles, so neither does
   `--uninstall`. Open your profile (`notepad $PROFILE`) and delete the
   `jkit hook pwsh | Out-String | Invoke-Expression` line.
+- **Git Bash:** jkit has no hook there, but an older jkit's `jkit hook --install` may have added a
+  block to Git Bash's `~/.bashrc`; `jkit hook bash --uninstall` takes it out.
 
 Shells that are already open keep the hook until you close them.
+
+### Windows user environment
+
+If you ran `jkit env --install`, undo it while jkit is still there:
+
+```powershell
+jkit env --uninstall
+```
+
+It removes only what `--install` set (the `*_HOME` variables naming jkit's global links, and
+their `bin` folders in your user `PATH`), and puts back a `*_HOME` of your own that `--install`
+replaced, kept in `JKIT_SAVED_<TOOL>`, unless that folder no longer exists. Each change is
+printed.
 
 ## 2. Remove jkit's folder
 
@@ -65,7 +81,7 @@ Use the same tool you installed it with:
 | apt | `sudo apt remove jkit` |
 | dnf (an `.rpm`) | `sudo dnf remove jkit` |
 | winget | `winget uninstall AdrianDeLeon.jkit` |
-| a `.tar.gz` or `.zip` | delete the `jkit` (or `jkit.exe`) you put on `PATH`, for example `sudo rm /usr/local/bin/jkit`; on Windows, also any `jkit.exe.old` next to it |
+| a `.tar.gz` or `.zip` | delete the `jkit` (or `jkit.exe`) you put on `PATH`, for example `sudo rm /usr/local/bin/jkit`; on Windows, also `vcruntime140.dll`, `vcruntime140_1.dll` and any `jkit.exe.old` or `jkit.exe.1.old` next to it |
 
 If you added the Vitrina apt repository only for jkit, you can remove it too:
 
@@ -84,8 +100,9 @@ jkit didn't make these, so it can't undo them, but they point into `~/.jkit` and
 once it's gone:
 
 - **IDE settings** that point at `~/.jkit/global/jdk` or a folder under `~/.jkit/tools/`.
-- **Windows environment variables**: a `JAVA_HOME` set to `%USERPROFILE%\.jkit\global\jdk`, and
-  `%JAVA_HOME%\bin` in your user `Path`.
+- **Windows environment variables** you set by hand: a `JAVA_HOME` set to
+  `%USERPROFILE%\.jkit\global\jdk`, and `%JAVA_HOME%\bin` in your user `Path`. (What
+  `jkit env --install` set, `jkit env --uninstall` removes.)
 - **Build tool settings**: `org.gradle.java.installations.paths` in
   `~/.gradle/gradle.properties`, or `jdkHome` entries in `~/.m2/toolchains.xml` (see
   [Build tools](/guides/build-tools/)).
@@ -97,8 +114,8 @@ once it's gone:
 ## What jkit never touched
 
 jkit writes only inside `~/.jkit` (or `JKIT_HOME`), plus the hook block in your shell's startup
-file (or fish's `conf.d/jkit.fish`), and the `jkit.toml` files you asked it to write with
-`jkit pin`. While a command runs, the hook also uses a temporary file in your temp folder, which
+file (or fish's `conf.d/jkit.fish`), the `jkit.toml` files you asked it to write with
+`jkit pin`, and on Windows the user environment variables `jkit env --install` sets. While a command runs, the hook also uses a temporary file in your temp folder, which
 it deletes right after.
 
 It never changes:

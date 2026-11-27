@@ -46,7 +46,8 @@ Symbolic links on the way are followed: what counts is where they lead. Each err
 hint, usually to use a `JKIT_HOME` of your own such as `~/.jkit`.
 
 Group-writable folders are accepted, because many Linux distributions give each user a private
-group and a umask that makes new folders group-writable.
+group and a umask that makes new folders group-writable. What jkit unpacks into the home (JDKs,
+Maven, Gradle, sbt) is never group-writable, whatever the archive or the umask says.
 
 jkit creates a new home readable only by you (`rwx------`).
 
@@ -133,6 +134,19 @@ who needs a version the admin hasn't installed can use their own `~/.jkit` (unse
 ask the admin.
 
 After an `upgrade` by the admin, the global links move to the new builds for everyone.
+
+## Several jkits on one home
+
+Two terminals, or CI jobs that share a home, can install at the same time. jkit holds its install
+lock only while it looks at and changes `tools/`, so parallel installs download side by side, and
+`remove`, `prune` and `self-update` don't wait for a download. A second install of the same build
+waits for the first and downloads only if that one failed. `prune` and `doctor` leave alone the
+folder a running install downloads into.
+
+On a file system that keeps no locks (some NFS mounts), jkit can't tell whether a work folder in
+`tmp/` belongs to an install running right now. `jkit prune` and `jkit doctor` then name each such
+folder with its age and delete none of them; once one is a day old it is probably left over, and
+`jkit prune` prints the command to remove it when no jkit is running.
 
 ## Containers
 

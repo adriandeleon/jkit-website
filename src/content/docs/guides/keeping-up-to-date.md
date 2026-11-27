@@ -21,21 +21,25 @@ jkit self-update           # jkit itself
 
 ## jkit upgrade
 
-`jkit upgrade` installs the newest build of each **release line** you have: each tool and major
-version, and for JDKs each vendor and JavaFX or not. It never moves you to another major version.
+`jkit upgrade` installs the newest build of each **release line** you have: for JDKs, GraalVM and
+sbt the major version, and for JDKs each vendor and JavaFX or not; for Maven and Gradle the minor
+release (3.9, 8.14). It never moves you to another major version.
 
 ```console
 $ jkit upgrade --dry-run
 jdk@21 temurin is up to date (21.0.13.1+2)
 jdk@17 zulu is up to date (17.0.21.1+2)
-maven@3: 3.9.16 → 3.10.2
+maven@3.9: 3.9.9 → 3.9.11
 run without --dry-run to install
 ```
 
 - JDK 21.0.5 goes to the newest 21 from the same vendor, never to 25, and never to another
   vendor. To move to a new major version, install it (`jkit install jdk@25`) and switch.
-- For Maven, Gradle and sbt the line is the major version too, so Maven 3.9.x can move to 3.10.x,
-  and Gradle 8.10 to 8.14.
+- For Maven and Gradle the line is the minor release: Maven 3.9.9 moves to 3.9.11, not to 3.10.x,
+  and Gradle 8.10.1 to 8.10.2, not to 8.14. To move to a new minor release, install it
+  (`jkit install maven@3.10`). For sbt the line is the major version.
+- "is up to date" also says when the global points at an older build of that line, and how to
+  move it.
 - Early-access builds are skipped unless you add `--pre`.
 
 Narrow it down:
@@ -88,7 +92,8 @@ It removes:
 
 - **Older builds in a release line once a newer one is installed**: 21.0.5 once 21.0.9 from the
   same vendor is in. The release line is the same as for `jkit upgrade` (tool, major version,
-  vendor, JavaFX or not), so for Maven, 3.8.8 goes once a 3.9.x is installed.
+  vendor, JavaFX or not; for Maven and Gradle the minor release), so for Maven, 3.9.9 goes once
+  3.9.11 is installed, but 3.8.8 stays next to a 3.9.x.
 - **Folders left by interrupted installs and removals.**
 - **Cached version lists older than 30 days.** Newer ones stay, for `--offline`.
 
@@ -98,6 +103,9 @@ It keeps:
 - The global default, whatever it points at.
 - The build this shell uses (chosen with `jkit use`, or applied from a project).
 - The build the project in the **current folder** pins.
+- A build a running program uses, such as a JVM, an IDE or a Gradle daemon: it says which process
+  (`would keep …: a running program uses it (pid …)`). A `jkit use` in another shell that runs
+  nothing from the build can't be seen.
 - Early-access builds.
 
 `jkit prune` only knows about the project in the folder you run it from. Another project with an
@@ -130,13 +138,15 @@ What it does depends on how you installed jkit:
 |---|---|
 | Homebrew | prints `brew upgrade jkit` |
 | apt (the Vitrina repository) | prints `sudo apt update && sudo apt install --only-upgrade jkit` |
-| a `.deb` installed from a file | prints a `curl` command that downloads the new release's `.deb`, and `sudo apt install` for it |
-| dnf (an `.rpm`) | prints the `sudo dnf install` command for the new release's `.rpm` |
+| a `.deb` installed from a file | prints a command that downloads the new release's `.deb` into a new `mktemp -d` folder, checks it against the signed `SHA256SUMS`, and only then runs `sudo apt install` for it |
+| dnf (an `.rpm`) | prints a command that checks the new release's `.rpm` against the signed `SHA256SUMS` before `sudo dnf install` |
 | winget | prints `winget upgrade AdrianDeLeon.jkit` |
 | a `.tar.gz` or `.zip` from the releases | replaces the binary in place |
 
 For a package manager, it only prints the command, because replacing a file that a package
-manager owns would confuse it. Run the command it prints.
+manager owns would confuse it. Run the command it prints. For an `.rpm` or `.deb` installed from a
+file, jkit first checks that the release's `SHA256SUMS` is signed by jkit's release key, since dnf
+and apt don't check the signature of a package given as a file or URL.
 
 For a binary from a release archive, it first checks that the release's `SHA256SUMS` is signed by
 jkit's release key, which is built into jkit; a release without a good signature is refused. It
@@ -145,7 +155,8 @@ replaces the old one. If any step fails, nothing changes. It needs write access 
 is in: run it as the user who owns that folder, or move jkit to a folder on `PATH` that you own.
 On Windows the old binary is kept as `jkit.exe.old` until the next `self-update` deletes it.
 
-`jkit self-update` only moves to full releases. Pre-releases are on the
+`jkit self-update` only moves to full releases, even when a pre-release is marked as the latest
+release; only a pre-release moves to a pre-release. Pre-releases are on the
 [releases page](https://github.com/adriandeleon/jkit/releases/latest) only.
 
 ## Version lists and the cache
@@ -163,8 +174,8 @@ The other direction:
 
 - `--offline` (or `JKIT_NETWORK_OFFLINE=1`) uses only the cache and never contacts the network.
   Commands that need to download still fail, with a message saying so.
-- When a source can't be reached, jkit falls back to the cached list, however old, and says how
-  old it is.
+- When a source can't be reached, jkit falls back to the cached list if it is at most 7 days old,
+  and says how old it is. An older one fails, with a hint to use it on purpose with `--offline`.
 - `jkit doctor` shows how old the newest cached list is.
 
 `jkit prune` deletes cached lists older than 30 days.
