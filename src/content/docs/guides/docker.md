@@ -22,7 +22,7 @@ musl builds of a JDK. There is no arm64 musl build.
 ```dockerfile title="Dockerfile"
 # ---- build: jkit, the project's JDK and Maven, and the build itself
 FROM debian:12-slim AS build
-ARG JKIT_VERSION=0.5.0
+ARG JKIT_VERSION=0.6.0
 RUN apt-get update \
  && apt-get install -y --no-install-recommends ca-certificates curl \
  && rm -rf /var/lib/apt/lists/*

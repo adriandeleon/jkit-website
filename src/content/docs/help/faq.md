@@ -211,7 +211,8 @@ or a mirror you point jkit at. See [corporate networks](/guides/corporate-networ
 `jkit self-update`. For a jkit installed from a `.tar.gz` or `.zip`, it replaces the binary after
 checking the download against the release's `SHA256SUMS`, which must be signed by jkit's release
 key. For Homebrew, apt, dnf and winget it
-prints that tool's upgrade command instead. `jkit self-update --check` only says whether a newer
+prints that tool's upgrade command instead, and for the Windows `.msi` a PowerShell command that
+installs the newer `.msi` after checking it the same way. `jkit self-update --check` only says whether a newer
 release is out.
 
 ### How do I update my JDKs?

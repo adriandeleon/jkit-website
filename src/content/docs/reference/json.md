@@ -20,7 +20,7 @@ and [Scripts](/guides/scripts/).
 $ jkit --version --json
 {
   "schemaVersion" : 1,
-  "version" : "jkit 0.5.0"
+  "version" : "jkit 0.6.0"
 }
 ```
 
@@ -285,7 +285,7 @@ document is printed either way.
 {
   "schemaVersion": 1,
   "checks": [
-    { "id": "home", "level": "ok", "message": "jkit 0.5.0, linux-x64, home ~/.jkit", "fix": null },
+    { "id": "home", "level": "ok", "message": "jkit 0.6.0, linux-x64, home ~/.jkit", "fix": null },
     { "id": "links", "level": "fail", "message": "global maven → ~/.jkit/tools/maven/3.9.6, which no longer exists",
       "fix": "jkit use maven@3.9.11 --global, or remove the link: rm ~/.jkit/global/maven" }
   ],
@@ -566,15 +566,16 @@ when it didn't, or when the line was one jkit couldn't use (it is removed anyway
 `jkit self-update [--check] --json`.
 
 ```json
-{ "schemaVersion": 1, "current": "0.4.0", "latest": "0.5.0", "status": "managed",
-  "installedWith": "homebrew", "binary": "/opt/homebrew/Cellar/jkit/0.4.0/bin/jkit",
+{ "schemaVersion": 1, "current": "0.5.0", "latest": "0.6.0", "status": "managed",
+  "installedWith": "homebrew", "binary": "/opt/homebrew/Cellar/jkit/0.5.0/bin/jkit",
   "command": "brew upgrade jkit", "changes": [], "notes": [] }
 ```
 
 - `status`: `up-to-date`, `available` (with `--check`), `updated` (a release-archive install,
   replaced in place: `changes` names the binary), or `managed` (installed with a package manager,
   left alone: `command` is what updates it).
-- `installedWith`: `homebrew`, `deb`, `rpm`, `winget` or `archive`.
+- `installedWith`: `homebrew`, `deb`, `rpm`, `winget`, `msi` (the Windows `.msi`, either
+  scope; from 0.6.0) or `archive`.
 - `command` is null unless a newer release is out and a package manager installed jkit.
 - `latest` is the newest stable release; pre-releases are on the releases page only.
 

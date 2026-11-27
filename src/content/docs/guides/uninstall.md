@@ -81,6 +81,7 @@ Use the same tool you installed it with:
 | apt | `sudo apt remove jkit` |
 | dnf (an `.rpm`) | `sudo dnf remove jkit` |
 | winget | `winget uninstall AdrianDeLeon.jkit` |
+| the Windows `.msi` | uninstall jkit in Settings → Apps (or `msiexec /x jkit-<version>-windows-x64.msi`): this takes jkit's folder off `PATH` again |
 | a `.tar.gz` or `.zip` | delete the `jkit` (or `jkit.exe`) you put on `PATH`, for example `sudo rm /usr/local/bin/jkit`; on Windows, also `vcruntime140.dll`, `vcruntime140_1.dll` and any `jkit.exe.old` or `jkit.exe.1.old` next to it |
 
 If you added the Vitrina apt repository only for jkit, you can remove it too:

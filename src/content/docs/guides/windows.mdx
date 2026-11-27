@@ -28,14 +28,39 @@ What is different, in short:
 
 ## Install
 
-With winget:
+### The installer (`.msi`)
+
+From 0.6.0 each release has `jkit-<version>-windows-x64.msi`. Download it from the
+[releases page](https://github.com/adriandeleon/jkit/releases/latest), check it against
+`SHA256SUMS` (step 2 below works the same for the `.msi`), and open it. It asks who jkit is for:
+
+| Choice | Folder | `PATH` | Administrator rights |
+| --- | --- | --- | --- |
+| Just for you | `%LOCALAPPDATA%\Programs\jkit` | your user `PATH` | not needed |
+| All users | `%ProgramFiles%\jkit` | the system `PATH` | needed, now and to update it |
+
+Either way each user's JDKs and settings go in their own `%USERPROFILE%\.jkit`. Open a new
+terminal afterwards: programs started before the install have the old `PATH`.
+
+The `.msi` isn't Authenticode-signed, so SmartScreen may say "Windows protected your PC". Check
+the hash first, then choose *More info* → *Run anyway*.
+
+Unattended, it installs just for you; add `ALLUSERS=1` for all users:
+
+```powershell
+msiexec /i jkit-0.6.0-windows-x64.msi /qn
+msiexec /i jkit-0.6.0-windows-x64.msi /qn ALLUSERS=1   # from an administrator PowerShell
+```
+
+### winget
 
 ```powershell
 winget install AdrianDeLeon.jkit
 ```
 
-The winget package appears once winget-pkgs has merged the release. Until then, or if you prefer,
-use the `.zip`:
+The winget package appears once winget-pkgs has merged the release.
+
+### The `.zip`
 
 <Steps>
 
@@ -47,7 +72,7 @@ use the `.zip`:
 2. Check it against the release's `SHA256SUMS`:
 
    ```powershell
-   Get-FileHash .\jkit-0.5.0-windows-x64.zip -Algorithm SHA256
+   Get-FileHash .\jkit-0.6.0-windows-x64.zip -Algorithm SHA256
    ```
 
    The hash must match the line for that file in `SHA256SUMS` (PowerShell prints it in
@@ -62,7 +87,8 @@ use the `.zip`:
 
 </Steps>
 
-`jkit.exe` needs the Microsoft Visual C++ runtime. winget installs the Visual C++
+`jkit.exe` needs the Microsoft Visual C++ runtime. The `.msi` installs the runtime's two DLLs
+next to it, and a newer `.msi` replaces them. winget installs the Visual C++
 Redistributable (2015 or newer, x64) along with jkit. The `.zip` carries the runtime's two DLLs:
 keep them next to `jkit.exe`. `jkit self-update` keeps them up to date. Once the Redistributable
 is installed you can delete the two DLLs, and Windows Update keeps the runtime patched. With
@@ -199,7 +225,16 @@ jkit self-update
 ```
 
 A jkit from winget is left to winget, and `self-update` prints the command:
-`winget upgrade AdrianDeLeon.jkit`. A jkit from the `.zip` is replaced in place after checking the
+`winget upgrade AdrianDeLeon.jkit`.
+
+A jkit from the `.msi` is updated by a newer `.msi`. Run it and make the same choice as before:
+Windows Installer upgrades an install only for the same users, and the other choice installs a
+second copy. `jkit self-update` prints a PowerShell command that does it for you: it downloads the
+newer `.msi` into your `%TEMP%`, checks it against the release's signed `SHA256SUMS`, and installs
+it for the same users with a progress bar and no questions (`msiexec /passive`, with
+`ALLUSERS=1` for an all-users install).
+
+A jkit from the `.zip` is replaced in place after checking the
 download against the release's `SHA256SUMS`, signed by jkit's release key; the Visual C++ DLLs
 next to it are replaced too, and never added to a folder without them. Windows can't replace a
 running `.exe`, so the old one is renamed to `jkit.exe.old` and deleted by the next

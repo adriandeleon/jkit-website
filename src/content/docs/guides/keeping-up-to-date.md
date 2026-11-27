@@ -141,12 +141,13 @@ What it does depends on how you installed jkit:
 | a `.deb` installed from a file | prints a command that downloads the new release's `.deb` into a new `mktemp -d` folder, checks it against the signed `SHA256SUMS`, and only then runs `sudo apt install` for it |
 | dnf (an `.rpm`) | prints a command that checks the new release's `.rpm` against the signed `SHA256SUMS` before `sudo dnf install` |
 | winget | prints `winget upgrade AdrianDeLeon.jkit` |
+| the Windows `.msi` | prints a PowerShell command that downloads the newer `.msi`, checks it against the signed `SHA256SUMS`, and installs it for the same users (just you, or all users) |
 | a `.tar.gz` or `.zip` from the releases | replaces the binary in place |
 
 For a package manager, it only prints the command, because replacing a file that a package
 manager owns would confuse it. Run the command it prints. For an `.rpm` or `.deb` installed from a
-file, jkit first checks that the release's `SHA256SUMS` is signed by jkit's release key, since dnf
-and apt don't check the signature of a package given as a file or URL.
+file, or the `.msi`, jkit first checks that the release's `SHA256SUMS` is signed by jkit's release
+key, since dnf and apt don't check the signature of a package given as a file or URL.
 
 For a binary from a release archive, it first checks that the release's `SHA256SUMS` is signed by
 jkit's release key, which is built into jkit; a release without a good signature is refused. It
