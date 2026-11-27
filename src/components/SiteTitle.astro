@@ -1,0 +1,48 @@
+---
+// Starlight's site title (the jkit wordmark) followed by the released version, as on the Editora
+// site. The version is the newest entry of releases.ts, which GenWhatsNew writes at each release,
+// so the badge follows the release without a hand edit.
+import Default from "@astrojs/starlight/components/SiteTitle.astro";
+import { releases } from "../lib/releases";
+
+const newest = (a: string, b: string) => {
+  const x = a.split(".").map(Number);
+  const y = b.split(".").map(Number);
+  for (let i = 0; i < Math.max(x.length, y.length); i++) {
+    if ((x[i] ?? 0) !== (y[i] ?? 0)) return (x[i] ?? 0) > (y[i] ?? 0) ? a : b;
+  }
+  return a;
+};
+const version = Object.keys(releases).reduce(newest);
+---
+
+<div class="site-title-with-version">
+  <Default><slot /></Default>
+  <a class="version" href="/whats-new/" title={`jkit ${version}: what's new`}>v{version}</a>
+</div>
+
+<style>
+  .site-title-with-version {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+  .version {
+    font-family: var(--sl-font-mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--sl-color-gray-3);
+    background: var(--sl-color-bg-nav);
+    border: 1px solid var(--sl-color-hairline-shade);
+    border-radius: 999px;
+    padding: 0.05rem 0.5rem;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .version:hover {
+    color: var(--sl-color-white);
+    border-color: var(--sl-color-gray-4);
+  }
+</style>
