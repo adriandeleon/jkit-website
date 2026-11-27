@@ -40,11 +40,11 @@ GitHub can be reached.
 
 ```console
 $ jkit doctor
-ok    jkit 0.4.0, linux-x64, home ~/.jkit
+ok    jkit 0.5.0, linux-x64, home ~/.jkit
 warn  shell hook not loaded: jkit use can't change this shell, and the global versions aren't on PATH
       fix: jkit hook --install, then open a new shell
 ok    jkit on PATH: /usr/bin/jkit
-ok    default vendors: temurin (jdk), graalvm-ce (graalvm)
+ok    default vendors: temurin (jdk, default), graalvm-ce (graalvm, default)
 ok    global links and this shell's choices point at existing installs
 ok    no *_HOME variable set outside jkit
 ok    3 installs, nothing left over
@@ -97,6 +97,16 @@ Something in your startup files (SDKMAN, a distribution's `java` alternatives, a
 `export PATH=...`) runs after the jkit hook and puts its own folder first. Move the jkit line to
 the end of `~/.bashrc`, `~/.zshrc` or fish's config, then open a new shell.
 
+On Windows, a `java` in the system `PATH` comes before your user `PATH`, so it wins in programs
+started outside a hooked PowerShell. `jkit doctor` warns about it:
+
+```text
+warn  the system PATH has C:\Program Files\Common Files\Oracle\Java\javapath (java.exe), which comes before the user PATH and wins over jkit's global versions outside a hooked PowerShell
+      fix: remove it from the system PATH (needs admin)
+```
+
+A hooked PowerShell puts jkit's folders first anyway. See [Windows](/guides/windows/).
+
 **`JAVA_HOME` is set somewhere else.** See [`JAVA_HOME` points somewhere else](#java_home-points-somewhere-else).
 
 ## `jkit use` says the hook isn't loaded
@@ -124,6 +134,13 @@ On Windows, `jkit hook --install` doesn't edit PowerShell profiles yet. Add the 
 ```powershell
 jkit hook pwsh | Out-String | Invoke-Expression
 ```
+
+Windows PowerShell 5.1 runs no profile until scripts are allowed for your account:
+`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`. PowerShell 7 (`pwsh`) allows them already.
+
+jkit has no hook for Git Bash, MSYS2 or Cygwin. In Git Bash, `jkit hook --install` refuses and gives
+the PowerShell line instead. An older jkit wrote a bash block there that made every Git Bash start
+fail; `jkit hook bash --uninstall` takes it out.
 
 If you've installed the hook but `jkit doctor` says this:
 
@@ -178,7 +195,9 @@ After `jkit install`, check its last lines:
 ```
 
 The hook is what puts `~/.jkit/global/jdk/bin` on `PATH`. Run `jkit hook --install` and open a
-new shell. A shell that was already open before you installed the hook doesn't have it.
+new shell. A shell that was already open before you installed the hook doesn't have it. In a shell
+with the hook, the first install of a tool sets `JAVA_HOME` (or the tool's `*_HOME`) right away and
+prints a `set` line for it.
 
 If the hook is loaded, the tool may have no default yet. Only the first build of each tool you
 install becomes the default; after that, install prints:
@@ -318,6 +337,21 @@ Other messages in this family:
 - `<host> no longer has what jkit asked for (HTTP 404)`: the cached version list is out of date.
   Add `--refresh`.
 
+**An old build from a vendor that stopped updating a release.** openjdk (jdk.java.net) and
+GraalVM CE publish only the first updates of each release, so `jkit install jdk@21 openjdk` gets
+21.0.2. `jkit search` marks such a build, and `jkit install` warns and says where the newest build
+of that release is:
+
+```console
+$ jkit search jdk@21 openjdk
+21.0.2+13  ↓ behind: newest 21 is 21.0.13.1+5
+21.0.1+12
+21+35
+↓ behind: the vendor stopped updating this release; other vendors have newer builds
+```
+
+Install from one of the vendors the warning names; it gives the command.
+
 See [versions and vendors](/reference/versions-and-vendors/) and
 [choosing a JDK](/guides/choosing-a-jdk/).
 
@@ -345,6 +379,10 @@ Related warnings that don't stop the install:
   can't be fetched or checked, the install is refused the same way. A signed Corretto build must
   also unpack to the JDK version jkit asked for, or it is refused with
   `the download for ... is signed, but it is JDK <version>; nothing was installed`.
+- Corretto builds from 2019 (8u222, 8u232, 11.0.4, 11.0.5) are signed with Amazon's since-retired
+  keys, which jkit doesn't have, so they are refused:
+  `couldn't check the signature of ...: it is signed with Amazon's retired key <key id>, one of the keys of its 2019 releases, which expired in 2024 (pick a newer build)`.
+  Pick a newer build, or rerun with `--allow-unverified`. `jkit search` marks these builds ○.
 
 See [security](/reference/security/).
 
@@ -371,12 +409,14 @@ error: couldn't check the signature of maven <version>: made with key <key id>, 
   or pick another version or vendor
 ```
 
-When a publisher signs its downloads (Temurin and Microsoft when foojay lists a signature,
-Corretto, Maven 3.9.0 and later, sbt), jkit needs a good signature, not only the checksum: the
+When a publisher signs its downloads (Temurin, Microsoft, Corretto, Maven 3.9.0 and later, sbt),
+jkit needs a good signature, not only the checksum: the
 checksum usually comes from the same server as the download, so whoever can replace one can
 replace both. A signature jkit can't fetch (`couldn't fetch the signature of ...`), can't read
 (not an OpenPGP signature, or a weak hash), or can't tie to the publisher's built-in keys refuses
-the install. `jkit sync` and `jkit upgrade` stop the same way.
+the install. `jkit sync` and `jkit upgrade` stop the same way. Temurin builds from before Adoptium
+started signing (before 8u342, 11.0.16, 17.0.4 and 18.0.2) are the exception: they install on their
+checksum, and jkit says only the checksum was checked.
 
 Expect it most with Maven. Each Maven release is signed by whichever Apache release manager made
 it, so a release by someone new is refused until a jkit release adds their key. A Maven mirror
@@ -428,6 +468,21 @@ error: --offline, but this lookup on api.foojay.io isn't cached (the cache only 
   run the command once without --offline
 ```
 
+When the network fails, jkit falls back to a cached version list at most a week old, and says so.
+An older one isn't used in its place:
+
+```text
+error: couldn't reach api.foojay.io (<detail>); the cached version list is 9 days old, too old to use in its place
+  try again later
+  or use the cached list from 9 days ago on purpose: add --offline
+```
+
+`--offline` still uses any cached copy, however old.
+
+jkit reads `JKIT_NETWORK_OFFLINE`, not `JKIT_OFFLINE`. With `JKIT_OFFLINE` set, every command warns
+`JKIT_OFFLINE is set, but jkit reads JKIT_NETWORK_OFFLINE (it ignores JKIT_OFFLINE)`, and so does
+`jkit doctor`.
+
 `jkit list`, `status`, `env`, `exec` and `doctor` (without `--network`) never use the network. See [corporate networks](/guides/corporate-networks/).
 
 ## IDE uses a different JDK
@@ -445,9 +500,11 @@ pinned to another version, point the IDE at that install (`jkit list` shows them
 new process in that folder should get. Maven and Gradle settings in the IDE work the same way with
 `~/.jkit/global/maven` and `~/.jkit/global/gradle`. See [IDEs](/guides/ides/).
 
-On Windows, programs started outside a hooked PowerShell see the global JDK only if you set
-`JAVA_HOME` to `%USERPROFILE%\.jkit\global\jdk` once and add `%JAVA_HOME%\bin` to your user
-`PATH`. See [Windows](/guides/windows/).
+On Windows, programs started outside a hooked PowerShell (cmd.exe, IDEs, Explorer) see the global
+versions once you run `jkit env --install`: it sets `JAVA_HOME` and the other `*_HOME` variables in
+your user environment to jkit's global links and puts their `bin` folders first on your user `PATH`.
+`jkit doctor` says whether it's set up. A `java` in the system `PATH` still comes first; see
+[above](#java--version-shows-the-wrong-version). See [Windows](/guides/windows/).
 
 ## `jkit: command not found` after installing jkit
 
@@ -475,27 +532,33 @@ jkit's Linux builds need glibc 2.34 or newer and zlib: Debian 12+, Ubuntu 22.04+
 Alma 9+. On an older system the binary doesn't start, and the system loader prints something like
 `version 'GLIBC_2.34' not found (required by jkit)`.
 
-Alpine uses musl instead of glibc, and there is no jkit build for it. In containers, use a glibc-based image such as
-Debian or Ubuntu for the steps that run jkit. See [Docker](/guides/docker/).
+On Alpine and other musl systems (x64), and on glibc systems older than 2.34, use the static
+`jkit-<version>-linux-x64-musl.tar.gz` from the
+[releases page](https://github.com/adriandeleon/jkit/releases/latest), from 0.5.0 on. It needs
+nothing from the system, and `jkit self-update` on a musl system picks it. There is no arm64 musl
+build yet; on Alpine for ARM, use a glibc-based image such as Debian or Ubuntu for the steps that
+run jkit. See [Docker](/guides/docker/).
 
 ## macOS blocks jkit
 
 The macOS builds are signed and notarized by Apple, so Gatekeeper lets them run, and they need
-macOS 15 or newer. If macOS refuses to open jkit:
+macOS 14 (Sonoma) or newer (jkit 0.4.0 and earlier need macOS 15). If macOS refuses to open jkit:
 
 - Check your macOS version. On older versions the binary doesn't run.
 - Install from Homebrew (`brew install adriandeleon/tap/jkit`) or the
   [releases page](https://github.com/adriandeleon/jkit/releases/latest), not from a copy
   someone passed around.
 
-Don't turn Gatekeeper off for jkit. If an official build is blocked on macOS 15 or newer, please
+Don't turn Gatekeeper off for jkit. If an official build is blocked on macOS 14 or newer, please
 [open an issue](https://github.com/adriandeleon/jkit/issues).
 
 ## Windows: `jkit.exe` won't start
 
-`jkit.exe` needs the Microsoft Visual C++ Redistributable (2015 or newer, x64). winget installs it
-along with jkit, and most machines already have it. With the `.zip`, if Windows reports a missing
-DLL or jkit exits without output, install it:
+`jkit.exe` needs the Microsoft Visual C++ runtime. winget installs the Visual C++ Redistributable
+(2015 or newer, x64) along with jkit. From 0.5.0 the `.zip` carries the runtime's two DLLs,
+`vcruntime140.dll` and `vcruntime140_1.dll`, next to `jkit.exe`: keep them next to it. If Windows
+reports a missing DLL or jkit exits without output (with the `.zip` of 0.4.0 or earlier, or with
+the DLLs moved away), install the Redistributable:
 
 ```powershell
 winget install Microsoft.VCRedist.2015+.x64
@@ -506,23 +569,17 @@ Windows on ARM runs the x64 build under emulation. Windows support is a preview;
 
 ## Windows: PowerShell doesn't change, or `jkit exec` says `Unknown option`
 
-In jkit 0.4.0:
+In jkit 0.4.0, `jkit use`, `reset`, `pin` and `sync` printed `set JAVA_HOME=…` in Windows
+PowerShell 5.1 without changing `$env:JAVA_HOME`, and `jkit exec jdk@21 -- java -version` failed
+with `Unknown option: '-version'` in a PowerShell with the hook loaded. Both are fixed in 0.5.0:
+update jkit (`jkit self-update` does it, or prints the winget command), then open a new window.
 
-- **`jkit use`, `reset`, `pin` or `sync` print `set JAVA_HOME=…`, but `$env:JAVA_HOME` doesn't
-  change** in Windows PowerShell 5.1. Its default execution policy blocks the script file the hook
-  applies changes through (and keeps `$PROFILE` from loading at all). Allow scripts for your
-  account once, then open a new window:
+If the hook doesn't load at all in Windows PowerShell 5.1, its execution policy is blocking
+`$PROFILE`. Allow scripts for your account once, then open a new window:
 
-  ```powershell
-  Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
-  ```
-
-  PowerShell 7 (`pwsh`) allows them already.
-- **`jkit exec jdk@21 -- java -version` fails with `Unknown option: '-version'`** in a PowerShell
-  with the hook loaded: PowerShell drops the `--` it passes to the hook's `jkit` function. Run
-  `jkit.exe exec jdk@21 -- java -version`, which skips the function.
-
-Both are fixed for the release after 0.4.0.
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+```
 
 ## `jkit remove` refuses
 
@@ -531,10 +588,10 @@ leave `java` pointing at nothing:
 
 ```console
 $ jkit remove jdk@17 zulu
-error: jdk 17.0.21.1+2 zulu is global; nothing removed
+error: jdk 17.0.21.1+2 zulu is the global jdk; nothing removed
   make another version the default first: jkit use jdk@<version> --global
   or clear the default: jkit reset jdk --global
-  or remove it anyway (the link goes too): add --force
+  or remove it anyway (the global link goes too): add --force
 ```
 
 Follow one of the hints. A version that matches several installed builds is also refused, with
@@ -562,12 +619,14 @@ jkit prune
 ```
 
 `jkit prune` removes older builds within a release line once a newer one is installed (21.0.5 once
-21.0.9 is in), unless that build is global, used in this shell or pinned here; folders left by
+21.0.9 is in), unless that build is global, used in this shell, pinned here, or used by a running
+program such as a JVM, an IDE or a Gradle daemon (prune says which process); folders left by
 interrupted installs and removals; and cached version lists older than 30 days. A project
 elsewhere that pins an exact old build gets it back with `jkit sync`.
 
 To remove a whole release line, use `jkit remove jdk@17 --all`. `jkit doctor` also reports
-unfinished installs and leftovers in `~/.jkit/tmp`, with the command to clear them. See
+unfinished installs, with the command that removes them, and leftovers in `~/.jkit/tmp`, which
+`jkit prune` clears. See
 [keeping up to date](/guides/keeping-up-to-date/).
 
 ## Other errors
@@ -581,6 +640,11 @@ unfinished installs and leftovers in `~/.jkit/tmp`, with the command to clear th
   [shared machines](/guides/shared-machines/).
 - `invalid /home/you/.jkit/config.toml: ...`: fix the file, or move it away to use the defaults.
   `jkit config` shows each setting and where it comes from.
+- `a temporary file an interrupted jkit write left: ~/.jkit/.config.toml.<digits>.jkit-tmp` (from
+  `jkit doctor`, check `temp-files`): jkit writes `~/.bashrc`, `~/.zshrc`, fish's file, `config.toml` and
+  `jkit.toml` through a temporary `.<name>.<digits>.jkit-tmp` next to the file, and an interrupted
+  write can leave one. When no jkit command is running, remove it with the `rm` command doctor
+  prints (`Remove-Item` on Windows).
 
 Every error goes to stderr as `error: ...` followed by indented hints, and `--json` puts the same
 message and hints in `error.message` and `error.hints`. Exit codes are listed in

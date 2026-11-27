@@ -55,7 +55,8 @@ newest 21.
 - **Verification.** SDKMAN checks a checksum when its service supplies one and otherwise installs
   without one. jkit refuses a download with no published checksum unless you pass
   `--allow-unverified`, and also checks the OpenPGP signature of Temurin, Microsoft and Corretto
-  JDKs, Maven 3.9.0 and later, and sbt.
+  JDKs, Maven 3.9.0 and later, and sbt. JDKs from most other vendors (Zulu, Liberica, SapMachine,
+  Semeru, Oracle, GraalVM, Mandrel) must come from the vendor's own download server.
 - **Vendors.** jkit takes JDKs from the foojay Disco API, so it has every vendor foojay lists
   (20+), including ones SDKMAN doesn't carry.
 - **Scripts, CI and agents.** `jkit exec jdk@17 -- mvn test` runs one command with chosen versions

@@ -33,8 +33,9 @@ JBang or other tools. Those either run on the JDK jkit gives you, or come throug
 
 Everything goes in `~/.jkit`: installs in `~/.jkit/tools/`, the global defaults as links in
 `~/.jkit/global/`, cached version lists in `~/.jkit/index/`, and settings in
-`~/.jkit/config.toml`. `JKIT_HOME` moves all of it. The only file outside it that jkit changes is
-your shell's startup file, where `jkit hook --install` adds a short marked block. See
+`~/.jkit/config.toml`. `JKIT_HOME` moves all of it. Outside it, jkit changes your shell's startup
+file, where `jkit hook --install` adds a short marked block, a project's `jkit.toml` when you run
+`jkit pin`, and on Windows your user environment variables when you run `jkit env --install`. See
 [files and folders](/reference/files-and-folders/).
 
 ### Does it touch the Java my system already has?
@@ -96,7 +97,7 @@ from Temurin, Corretto, Zulu, Microsoft and others are free to use.
 
 ### Does it work on Apple Silicon?
 
-Yes. jkit runs natively on Apple Silicon and Intel Macs (macOS 15 or newer) and installs the
+Yes. jkit runs natively on Apple Silicon and Intel Macs (macOS 14 Sonoma or newer) and installs the
 arm64 build of each JDK when the vendor has one. `jkit search jdk` shows what exists for your
 machine.
 
@@ -104,13 +105,15 @@ machine.
 
 Yes, as a preview: it's less tested than macOS and Linux. `jkit hook --install` doesn't edit
 PowerShell profiles yet (add one line by hand), PowerShell doesn't switch versions on `cd`, and
-Windows on ARM runs the x64 build under emulation. See [Windows](/guides/windows/) and
+Windows on ARM runs the x64 build under emulation. `jkit env --install` gives programs started
+outside PowerShell (cmd.exe, IDEs) the global versions too. See [Windows](/guides/windows/) and
 [WSL](/guides/wsl/).
 
 ### Does it work on Alpine Linux?
 
-No. jkit's Linux builds need glibc 2.34 or newer (Debian 12+, Ubuntu 22.04+, RHEL 9+), and Alpine
-uses musl. In containers, use a Debian- or Ubuntu-based image for the steps that run jkit. See
+Yes, on x64, from jkit 0.5.0. Each release has a static Linux x64 build linked against musl,
+`jkit-<version>-linux-x64-musl.tar.gz`, which needs nothing from the system. There is no arm64
+musl build yet; on ARM, use a Debian- or Ubuntu-based image for the steps that run jkit. See
 [Docker](/guides/docker/).
 
 ## Living with other tools
@@ -133,7 +136,8 @@ no wrapper. See [build tools](/guides/build-tools/).
 ### What does my IDE use?
 
 Whatever JDK you point it at. Point it at `~/.jkit/global/jdk` and it follows
-`jkit use ... --global`. See [IDEs](/guides/ides/).
+`jkit use ... --global`. On Windows, `jkit env --install` sets `JAVA_HOME` in your user
+environment to that link, for IDEs that read it. See [IDEs](/guides/ides/).
 
 ## Projects and teams
 
@@ -177,7 +181,8 @@ Downloads come over HTTPS only and are checked against the checksum their source
 `--allow-unverified`. Temurin, Microsoft and Corretto JDKs, Maven 3.9.0 and later, and sbt are
 also checked against their publisher's OpenPGP signature, with keys built into jkit. A signature
 that doesn't match stops the install; one that is missing or isn't by the publisher's key stops
-it too, unless you pass `--allow-unverified`. See [security](/reference/security/).
+it too, unless you pass `--allow-unverified`. JDKs from vendors jkit has no key for (Zulu, Liberica
+and others) must come from the vendor's own download server. See [security](/reference/security/).
 
 ### Does jkit phone home or collect telemetry?
 
